@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -24,6 +25,16 @@ func InitDB(cfg *config.Config) error {
 	driver := strings.ToLower(cfg.Database.Driver)
 	if dsn == "" || contains(dsn, "yourpassword") {
 		log.Println("[WARN] 数据库 DSN 未配置或仍为占位符，请检查 config/config.yaml")
+	}
+
+	// SQLite：自动创建数据文件所在目录，保证首次启动/CI 冒烟测试开箱即用
+	if driver == "sqlite" || driver == "" {
+		dir := filepath.Dir(dsn)
+		if dir != "." && dir != "" {
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				return fmt.Errorf("create database dir %s failed: %w", dir, err)
+			}
+		}
 	}
 
 	gormCfg := &gorm.Config{

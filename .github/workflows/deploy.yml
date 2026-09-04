@@ -46,22 +46,16 @@ jobs:
           APP_SERVER_PORT=18080 ./class-deduction-bin > /tmp/server.log 2>&1 &
           SERVER_PID=$!
           sleep 3
-          # 健康检查
           curl -sf http://localhost:18080/health || { cat /tmp/server.log; exit 1; }
-          # 登录拿 token（种子管理员，仅用于冒烟测试）
           TOKEN=$(curl -sf -X POST http://localhost:18080/api/v1/auth/login \
             -H 'Content-Type: application/json' \
             -d '{"username":"admin","password":"admin123"}' | python3 -c "import sys,json;print(json.load(sys.stdin)['data']['token'])")
           [ -n "$TOKEN" ]
-          # 看板统计
           curl -sf http://localhost:18080/api/v1/stats/overview -H "Authorization: Bearer $TOKEN" > /dev/null
-          # 字典四类（学习/寝室/日常/两操）
           curl -sf http://localhost:18080/api/v1/dictionaries -H "Authorization: Bearer $TOKEN" | grep -q '学习' || { echo "字典缺少四类"; exit 1; }
-          # 班主任账号存在
           curl -sf -X POST http://localhost:18080/api/v1/auth/login \
             -H 'Content-Type: application/json' \
             -d '{"username":"banzhuren","password":"123456"}' | grep -q 'teacher' || { echo "班主任账号异常"; exit 1; }
-          # SSE 事件流端点可连
           timeout 3 curl -sf -N "http://localhost:18080/api/v1/events?token=$TOKEN" | head -c 200 > /dev/null
           kill $SERVER_PID || true
           echo "SMOKE_TEST_OK"
@@ -73,10 +67,12 @@ jobs:
           path: class-deduction-bin
 
   deploy-server:
-    name: Deploy to Server (optional)
+    name: Deploy to Server (SSH)
     runs-on: ubuntu-latest
     needs: build-test-release
-    if: github.event_name == 'push' && vars.DEPLOY_ENABLED == 'true'
+    # 启用方式：仓库 Settings -> Variables 添加 DEPLOY_ENABLED=true；
+    # 并配置 Secrets：DEPLOY_HOST/DEPLOY_USER/DEPLOY_SSH_KEY/DEPLOY_PORT
+    if: vars.DEPLOY_ENABLED == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -101,17 +97,19 @@ jobs:
       - name: Build binary
         run: go build -o class-deduction-bin ./cmd
 
-      - name: Deploy via SSH
+      # 仅同步 二进制 + 前端产物 + 配置 + 导入脚本。
+      # 服务端 data/ 目录（含 class.db）从不被覆盖 —— 数据库持久化。
+      - name: Upload app files
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
-          source: "class-deduction-bin,web/dist,config"
+          source: "class-deduction-bin,web/dist,config,scripts"
           target: ${{ secrets.DEPLOY_PATH || '/opt/class-deduction' }}
 
-      - name: Restart service
+      - name: Configure service & restart
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -119,9 +117,71 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
           script: |
-            cd ${{ secrets.DEPLOY_PATH || '/opt/class-deduction' }}
-            chmod +x class-deduction-bin
-            pkill -f class-deduction-bin || true
-            nohup ./class-deduction-bin > server.log 2>&1 &
-            sleep 2
-            curl -sf http://localhost:8080/health && echo DEPLOY_OK
+            set -e
+            APP_DIR="${{ secrets.DEPLOY_PATH || '/opt/class-deduction' }}"
+            APP_PORT="${{ secrets.DEPLOY_APP_PORT || '8080' }}"
+            cd "$APP_DIR"
+            chmod +x class-deduction-bin scripts/import_students.py
+            mkdir -p data
+
+            # 环境注入（GitHub 令牌 -> 意见反馈同步 Issues）
+            printf 'APP_GITHUB_REPO=%s\n' "${{ secrets.APP_GITHUB_REPO || 'tangyuan9325/class-deduction' }}" > /etc/class-deduction.env
+            if [ -n "${{ secrets.APP_GITHUB_TOKEN }}" ]; then
+              printf 'APP_GITHUB_TOKEN=%s\n' "${{ secrets.APP_GITHUB_TOKEN }}" >> /etc/class-deduction.env
+            fi
+            printf 'APP_SERVER_PORT=%s\n' "$APP_PORT" >> /etc/class-deduction.env
+            chmod 600 /etc/class-deduction.env
+
+            # 重启服务（优先 systemd，回退 nohup）
+            if command -v systemctl >/dev/null 2>&1; then
+              cat > /etc/systemd/system/class-deduction.service <<EOF
+            [Unit]
+            Description=Class Deduction System
+            After=network.target
+            [Service]
+            WorkingDirectory=$APP_DIR
+            EnvironmentFile=/etc/class-deduction.env
+            ExecStart=$APP_DIR/class-deduction-bin
+            Restart=always
+            RestartSec=3
+            [Install]
+            WantedBy=multi-user.target
+            EOF
+              systemctl daemon-reload
+              systemctl enable class-deduction 2>/dev/null || true
+              systemctl restart class-deduction || true
+              sleep 3
+            else
+              pkill -f class-deduction-bin || true
+              sleep 1
+              set -a; . /etc/class-deduction.env; set +a
+              nohup ./class-deduction-bin > server.log 2>&1 &
+              sleep 3
+            fi
+
+            # 健康检查
+            curl -sf "http://127.0.0.1:$APP_PORT/health" || { echo "HEALTH_FAIL"; exit 1; }
+
+      # 学生名单安全导入：名单存于 Secret ROSTER_CSV，不进入公开仓库。
+      # 首次部署时写入服务器并创建学生账号（幂等，可重复执行）。
+      - name: Import student roster (from secret)
+        if: ${{ secrets.ROSTER_CSV != '' }}
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          script: |
+            set -e
+            APP_DIR="${{ secrets.DEPLOY_PATH || '/opt/class-deduction' }}"
+            APP_PORT="${{ secrets.DEPLOY_APP_PORT || '8080' }}"
+            cd "$APP_DIR"
+            printf '%s\n' "${{ secrets.ROSTER_CSV }}" > data/roster.csv
+            chmod 600 data/roster.csv
+            python3 -c "import requests" 2>/dev/null || pip3 install --quiet requests
+            python3 scripts/import_students.py \
+              --base-url "http://127.0.0.1:$APP_PORT" \
+              --csv data/roster.csv \
+              --admin admin \
+              --password "${{ secrets.ADMIN_PASSWORD || 'admin123' }}"

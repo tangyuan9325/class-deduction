@@ -112,3 +112,35 @@ pkg/              通用包（错误码 / JWT / 日志 / 响应）
 web/              Vue3 前端源码（src）与构建产物（dist）
 .github/workflows/deploy.yml   GitHub Action 构建 / 测试 / 部署
 ```
+
+## 线上部署（GitHub Actions）
+
+`main` 分支推送会自动执行 CI（构建 + 冒烟测试 + 产出 Linux 二进制）。
+
+如需通过 Actions 自动部署到你的服务器，请先在仓库 `Settings → Secrets and variables → Actions` 配置：
+
+**Variables（变量）**
+- `DEPLOY_ENABLED` = `true`（开启部署 Job）
+
+**Secrets（密钥）**
+- `DEPLOY_HOST`：服务器 IP/域名
+- `DEPLOY_USER`：SSH 用户名
+- `DEPLOY_SSH_KEY`：SSH 私钥（PEM）
+- `DEPLOY_PORT`：SSH 端口（默认 22）
+- `DEPLOY_PATH`（可选）：部署目录，默认 `/opt/class-deduction`
+- `DEPLOY_APP_PORT`（可选）：服务端口，默认 8080
+- `APP_GITHUB_TOKEN`（可选）：GitHub PAT，用于「意见反馈 → Issues 同步」
+- `ROSTER_CSV`（可选）：学生名单（CSV 文本：`姓名,学号,性别`），**存入 Secret 而非仓库**，首次部署时自动创建学生账号
+- `ADMIN_PASSWORD`（可选）：导入名单用的管理员密码，默认 admin123
+
+**部署策略（安全性 & 持久化）**
+- 部署仅同步 `二进制 + web/dist + config + scripts`，**绝不覆盖服务器 `data/` 目录** → SQLite 数据库持久化，升级不丢数据
+- 学生名单含个人信息，**只存于 Secret**，不进入公开仓库；部署时写入服务器 `data/roster.csv`（权限 600）并通过导入脚本幂等创建账号
+- GitHub 令牌通过环境变量 `APP_GITHUB_TOKEN` 注入，不写入仓库
+- 服务以 systemd 托管（无 systemd 则 nohup 回退），重启自愈
+- 实时更新（SSE）：Go 服务直跑自身端口，事件流不被代理缓冲，`/api/v1/events` 正常推送
+
+**手动导入名单（不使用 Actions 时）**
+```bash
+python3 scripts/import_students.py --base-url http://localhost:8080 --csv roster.csv
+```
