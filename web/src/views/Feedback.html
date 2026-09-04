@@ -1,0 +1,91 @@
+
+  <div class="page-container">
+    <el-card>
+      <template #header>
+        <div class="card-header">
+          <span>意见反馈</span>
+          <a
+            class="gh-link"
+            :href="githubIssuesUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            v-if="githubIssuesUrl"
+          >在 GitHub Issues 中查看全部反馈 →</a>
+        </div>
+      </template>
+      <el-form :model="form" label-width="90px" :rules="rules" ref="formRef">
+        <el-form-item label="意见建议" prop="content">
+          <el-input
+            v-model="form.content"
+            type="textarea"
+            :rows="4"
+            maxlength="2000"
+            show-word-limit
+            placeholder="写下你对系统的意见建议、遇到的问题或希望增加的功能…"
+          />
+        </el-form-item>
+        <el-form-item label="联系方式（选填）">
+          <el-input v-model="form.contact" placeholder="手机号 / 微信 / 邮箱（方便老师回复你）" style="max-width:360px" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :loading="submitting" :icon="Promotion" @click="onSubmit">提交反馈</el-button>
+          <span class="hint" style="margin-left:12px">提交后老师可查看，并可将反馈同步到 GitHub Issues 跟踪处理</span>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <el-card v-if="canManageFeedback" style="margin-top:16px">
+      <div class="toolbar">
+        <span class="card-title">反馈处理（仅老师可见）</span>
+        <el-select v-model="query.status" placeholder="状态" clearable style="width:130px">
+          <el-option label="待处理" value="open" />
+          <el-option label="处理中" value="processing" />
+          <el-option label="已处理" value="resolved" />
+          <el-option label="已关闭" value="closed" />
+        </el-select>
+        <el-button type="primary" :icon="Search" @click="loadList">查询</el-button>
+      </div>
+      <el-table :data="list" v-loading="loading" border>
+        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column prop="user_name" label="反馈人" width="100" />
+        <el-table-column prop="user_role" label="角色" width="90">
+          <template #default="{ row }">
+            <el-tag size="small" effect="plain">{{ roleText(row.user_role) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="content" label="内容" min-width="240" show-overflow-tooltip />
+        <el-table-column prop="contact" label="联系方式" width="130" />
+        <el-table-column prop="status" label="状态" width="90">
+          <template #default="{ row }">
+            <el-tag :type="statusType(row.status)" size="small">{{ statusText(row.status) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="GitHub" width="100">
+          <template #default="{ row }">
+            <a v-if="row.github_issue_num > 0" :href="`https://github.com/${githubRepo}/issues/${row.github_issue_num}`" target="_blank" rel="noopener">#{{ row.github_issue_num }}</a>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="created_at" label="提交时间" width="170">
+          <template #default="{ row }">{{ fmt(row.created_at) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="230" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" link type="primary" @click="onStatus(row, 'processing')">处理中</el-button>
+            <el-button size="small" link type="success" @click="onStatus(row, 'resolved')">已处理</el-button>
+            <el-button size="small" link type="warning" @click="onSync(row)" :loading="row.syncing">同步 Issues</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-pagination
+        class="pager"
+        v-model:current-page="query.page"
+        v-model:page-size="query.page_size"
+        :page-sizes="[10, 20, 50]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="loadList"
+        @current-change="loadList"
+      />
+    </el-card>
+  </div>

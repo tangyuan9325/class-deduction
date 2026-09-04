@@ -1,0 +1,28 @@
+
+  <div class="login-wrap">
+    <div class="login-box">
+      <div class="login-title">
+        <h2>班级量化考核管理系统</h2>
+        <p>Class Deduction System · v1.1.0</p>
+      </div>
+      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" size="large" @keyup.enter="onSubmit">
+        <el-form-item label="账号" prop="username">
+          <el-input v-model="form.username" placeholder="请输入账号" :prefix-icon="User" />
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="form.password" type="password" placeholder="请输入密码" show-password :prefix-icon="Lock" />
+        </el-form-item>
+        <el-form-item label="登录方式">
+          <el-radio-group v-model="remember">
+            <el-radio-button :value="false">临时登录</el-radio-button>
+            <el-radio-button :value="true">保持登录</el-radio-button>
+          </el-radio-group>
+          <div class="login-mode-tip">{{ remember ? '30 天内自动登录（适合自己常用的设备）' : '关闭浏览器即退出（适合公共/公用设备）' }}</div>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" class="login-btn" :loading="loading" @click="onSubmit">登 录</el-button>
+        </el-form-item>
+        <div class="login-tip">账号密码由班主任统一分配；班级看板账号：kandban</div>
+      </el-form>
+    </div>
+  </div>

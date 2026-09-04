@@ -1,0 +1,28 @@
+# 服务配置
+server:
+  port: 8080            # HTTP 监听端口
+  log_level: "info"     # 日志级别：debug/info/warn/error
+  # GitHub 仓库地址（用于「关于/克隆仓库」页面展示，留空则显示默认说明）
+  repo_url: "https://github.com/tangyuan9325/class-deduction"
+  # 学期开始日期（周小结/学期小结的"学期"起始基准），格式 YYYY-MM-DD
+  # 留空则默认取首次启动日期；可随时修改，小结页面会按此日期统计
+  semester_start: "2026-09-01"
+# 数据库配置
+# driver 支持 sqlite / mysql；默认 sqlite，开箱即用，数据库文件为 class.db
+database:
+  driver: "sqlite"
+  dsn: "data/class.db"
+  max_idle_conns: 10
+  max_open_conns: 100
+# JWT 配置
+jwt:
+  secret: "change-this-secret-in-production"
+  # 临时登录有效期（小时）：默认 2 小时，关闭浏览器即失效
+  expire_hours: 2
+  # 保持登录有效期（小时）：默认 720 小时 = 30 天
+  remember_hours: 720
+# GitHub 集成（意见反馈同步到 GitHub Issues）
+# 生产环境强烈建议用环境变量注入：APP_GITHUB_TOKEN / APP_GITHUB_REPO，避免密钥入库
+github:
+  token: ""
+  repo: "tangyuan9325/class-deduction"

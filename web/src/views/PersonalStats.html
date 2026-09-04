@@ -1,0 +1,56 @@
+  <div class="page-container">
+    <el-card>
+      <div class="toolbar">
+        <span class="card-title">个人统计</span>
+        <el-input v-if="canViewAll" v-model.number="query.user_id" placeholder="学生ID（留空看自己）" style="width:160px" clearable />
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          value-format="YYYY-MM-DD"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          style="width:280px"
+        />
+        <el-button type="primary" :icon="Search" @click="loadData">查询</el-button>
+      </div>
+    </el-card>
+
+    <div class="stat-card-row">
+      <el-card>
+        <div class="stat-card">
+          <div class="stat-label">累计总分</div>
+          <div class="stat-value" :class="(data.total_score || 0) < 0 ? 'minus' : 'plus'">{{ data.total_score || 0 }}</div>
+        </div>
+      </el-card>
+      <el-card>
+        <div class="stat-card">
+          <div class="stat-label">记录总数</div>
+          <div class="stat-value">{{ data.total_count || 0 }}</div>
+        </div>
+      </el-card>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-box">
+        <div class="card-title">各科目/项目扣分分布</div>
+        <div ref="barRef" class="chart-inner"></div>
+      </div>
+      <div class="chart-box">
+        <div class="card-title">扣分明细（最近10条）</div>
+        <el-table :data="data.recent || []" border style="height:320px">
+          <el-table-column prop="category" label="类别" width="80" />
+          <el-table-column prop="subject_or_item" label="科目/项目" />
+          <el-table-column prop="score" label="分值" width="80">
+            <template #default="{ row }">
+              <span :class="row.score < 0 ? 'minus' : 'plus'">{{ row.score }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="reason" label="原因" show-overflow-tooltip />
+          <el-table-column prop="record_date" label="日期" width="110">
+            <template #default="{ row }">{{ fmt(row.record_date) }}</template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </div>
+  </div>

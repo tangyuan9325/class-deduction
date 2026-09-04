@@ -1,0 +1,73 @@
+  <div class="page-container">
+    <el-card>
+      <template #header>
+        <div class="card-header">
+          <span>录入扣分</span>
+          <span class="hint">勾选学生，按类别/项目一键批量录入扣分</span>
+        </div>
+      </template>
+
+      <el-form :model="form" label-width="100px" :rules="rules" ref="formRef">
+        <el-row :gutter="16">
+          <el-col :span="8">
+            <el-form-item label="扣分类别" prop="category">
+              <el-radio-group v-model="form.category" @change="onCategoryChange">
+                <el-radio-button value="学习" label="学习" />
+                <el-radio-button value="寝室" label="寝室" />
+                <el-radio-button value="日常" label="日常" />
+                <el-radio-button value="两操" label="两操" />
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="科目/项目" prop="subject_or_item">
+              <el-select v-model="form.subject_or_item" placeholder="请选择" filterable allow-create>
+                <el-option v-for="d in dictOptions" :key="d.name" :label="d.name" :value="d.name" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="分值" prop="score">
+              <el-input-number v-model="form.score" :min="-50" :max="50" :step="-1" />
+              <span class="hint" style="margin-left:8px">扣分填负数</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="扣分原因">
+          <el-input v-model="form.reason" type="textarea" :rows="2" placeholder="例如：未按时提交周末试卷" />
+        </el-form-item>
+        <el-form-item label="记录日期">
+          <el-date-picker v-model="form.record_date" type="date" value-format="YYYY-MM-DD" placeholder="默认今天" style="width:240px" />
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <el-card style="margin-top:16px">
+      <template #header>
+        <div class="card-header">
+          <span>选择学生（已选 {{ selectedIds.length }} 人）</span>
+          <div>
+            <el-input v-model="keyword" placeholder="搜索姓名/账号" style="width:200px;margin-right:8px" clearable :prefix-icon="Search" />
+            <el-button type="primary" :loading="loading" @click="onSubmit">提交批量扣分</el-button>
+          </div>
+        </div>
+      </template>
+
+      <el-table
+        ref="tableRef"
+        :data="filteredStudents"
+        @selection-change="onSelectionChange"
+        row-key="id"
+        height="420"
+        border
+      >
+        <el-table-column type="selection" width="50" reserve-selection />
+        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column prop="real_name" label="姓名" />
+        <el-table-column prop="username" label="账号" />
+        <el-table-column label="班级">
+          <template #default="{ row }">{{ row.class_id || '-' }}</template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+  </div>

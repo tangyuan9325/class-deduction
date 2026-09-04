@@ -1,0 +1,28 @@
+.about-head { text-align: center; padding: 12px 0; }
+.about-name {
+  font-size: 24px; font-weight: 700;
+  background: linear-gradient(135deg, #e8eaed, #8fcbff);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.about-version { color: var(--accent); font-size: 14px; }
+.about-semester { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+.about-desc { color: var(--text-sub); font-size: 13px; line-height: 1.7; margin-bottom: 12px; }
+.code-line {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px; padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.code-text { color: var(--accent); font-size: 14px; word-break: break-all; flex: 1; }
+.deploy-steps { display: grid; gap: 12px; }
+.deploy-step {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 10px; padding: 12px 14px;
+  color: var(--text-sub); font-size: 13px; line-height: 1.7;
+}
+.deploy-step code { color: var(--accent); }
+.changelog-list { padding-left: 20px; color: var(--text-main); }
+.changelog-list li { margin-bottom: 8px; line-height: 1.6; }

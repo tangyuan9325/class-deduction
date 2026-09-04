@@ -1,0 +1,98 @@
+
+  <div class="page-container">
+    <el-card>
+      <div class="toolbar">
+        <span class="card-title">周小结 / 学期小结</span>
+        <el-radio-group v-model="scope">
+          <el-radio-button value="class">班级小结</el-radio-button>
+          <el-radio-button value="personal">个人小结</el-radio-button>
+        </el-radio-group>
+        <el-radio-group v-model="period">
+          <el-radio-button value="week">本周</el-radio-button>
+          <el-radio-button value="semester">本学期</el-radio-button>
+        </el-radio-group>
+        <el-input
+          v-if="scope === 'personal' && canViewAll"
+          v-model.number="query.user_id"
+          placeholder="学生ID（留空看自己）"
+          style="width:160px"
+          clearable
+        />
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          value-format="YYYY-MM-DD"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期（可空）"
+          style="width:300px"
+        />
+        <el-button type="primary" :icon="Search" @click="loadData">生成小结</el-button>
+      </div>
+      <div class="summary-head" v-if="data.period_label">
+        <div class="summary-title">{{ scope === 'class' ? '班级' : '个人' }}{{ period === 'week' ? '周小结' : '学期小结' }}</div>
+        <div class="summary-period">{{ data.period_label }} · {{ data.start_date }} ~ {{ data.end_date }}</div>
+        <div v-if="scope === 'personal' && data.user_name" class="summary-user">同学：{{ data.user_name }}</div>
+      </div>
+      <div class="stat-card-row">
+        <el-card>
+          <div class="stat-card"><div class="stat-label">累计扣分</div><div class="stat-value minus">{{ data.total_deduct }}</div></div>
+        </el-card>
+        <el-card>
+          <div class="stat-card"><div class="stat-label">累计加分</div><div class="stat-value plus">{{ data.total_bonus }}</div></div>
+        </el-card>
+        <el-card>
+          <div class="stat-card"><div class="stat-label">净分</div><div class="stat-value" :class="data.net_score < 0 ? 'minus' : 'plus'">{{ data.net_score }}</div></div>
+        </el-card>
+        <el-card>
+          <div class="stat-card"><div class="stat-label">记录总数</div><div class="stat-value">{{ data.total_count }}</div></div>
+        </el-card>
+      </div>
+    </el-card>
+
+    <el-card style="margin-top:16px">
+      <div class="card-title">分项明细（按类别）</div>
+      <el-table :data="data.by_category || []" border>
+        <el-table-column prop="category" label="类别" />
+        <el-table-column prop="deduct_count" label="扣分次数" width="110" />
+        <el-table-column prop="deduct_score" label="扣分合计" width="120">
+          <template #default="{ row }"><span class="minus">{{ row.deduct_score }}</span></template>
+        </el-table-column>
+        <el-table-column prop="bonus_count" label="加分次数" width="110" />
+        <el-table-column prop="bonus_score" label="加分合计" width="120">
+          <template #default="{ row }"><span class="plus">{{ row.bonus_score }}</span></template>
+        </el-table-column>
+        <el-table-column label="净分" width="120">
+          <template #default="{ row }">
+            <span :class="(row.deduct_score + row.bonus_score) < 0 ? 'minus' : 'plus'">{{ row.deduct_score + row.bonus_score }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-empty v-if="!data.by_category || data.by_category.length === 0" description="该周期暂无记录" />
+    </el-card>
+
+    <el-card v-if="scope === 'class'" style="margin-top:16px">
+      <div class="chart-row">
+        <div class="chart-box">
+          <div class="card-title">扣分最多 TOP5</div>
+          <el-table :data="data.top_deduct || []" border>
+            <el-table-column prop="target_name" label="学生" />
+            <el-table-column prop="count" label="记录数" width="90" />
+            <el-table-column prop="deduct_score" label="扣分合计" width="110">
+              <template #default="{ row }"><span class="minus">{{ row.deduct_score }}</span></template>
+            </el-table-column>
+          </el-table>
+        </div>
+        <div class="chart-box">
+          <div class="card-title">加分最多 TOP5</div>
+          <el-table :data="data.top_bonus || []" border>
+            <el-table-column prop="target_name" label="学生" />
+            <el-table-column prop="count" label="记录数" width="90" />
+            <el-table-column prop="bonus_score" label="加分合计" width="110">
+              <template #default="{ row }"><span class="plus">{{ row.bonus_score }}</span></template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+    </el-card>
+  </div>

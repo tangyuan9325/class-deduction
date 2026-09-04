@@ -1,0 +1,75 @@
+  <el-container class="layout">
+    <el-aside :width="collapsed ? '64px' : '210px'" class="aside">
+      <div class="logo">
+        <span v-if="!collapsed">班级量化考核</span>
+        <span v-else>班</span>
+      </div>
+      <el-menu
+        :default-active="activeMenu"
+        :collapse="collapsed"
+        router
+        text-color="#b7c0cd"
+        active-text-color="#fff"
+      >
+        <template v-for="item in menus" :key="item.path">
+          <el-menu-item
+            v-if="!item.requireAdmin || userStore.isAdmin || userStore.isTeacher"
+            :index="item.path"
+          >
+            <el-icon><component :is="item.icon" /></el-icon>
+            <template #title>{{ item.title }}</template>
+          </el-menu-item>
+        </template>
+      </el-menu>
+    </el-aside>
+    <el-container>
+      <el-header class="header">
+        <div class="header-left">
+          <el-icon class="collapse-btn" @click="collapsed = !collapsed">
+            <Fold v-if="!collapsed" />
+            <Expand v-else />
+          </el-icon>
+          <span class="page-title">{{ currentTitle }}</span>
+          <el-tag size="small" type="info" effect="plain" v-if="userStore.meta">v{{ userStore.meta.version }}</el-tag>
+        </div>
+        <el-dropdown @command="onCommand">
+          <span class="user-info">
+            <el-icon><UserFilled /></el-icon>
+            {{ userStore.realName }}
+            <el-tag size="small" :type="roleTagType" effect="plain" style="margin-left:8px">{{ roleText }}</el-tag>
+            <el-icon><ArrowDown /></el-icon>
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </el-header>
+      <el-main class="main">
+        <router-view v-slot="{ Component }">
+          <keep-alive>
+            <component :is="Component" />
+          </keep-alive>
+        </router-view>
+      </el-main>
+    </el-container>
+    <!-- 更新日志弹窗：首次进入更新后的系统时展示 -->
+    <el-dialog
+      v-model="changelogVisible"
+      title="系统更新日志 v1.1.0"
+      width="540px"
+      :close-on-click-modal="false"
+      :show-close="false"
+    >
+      <div class="changelog-body">
+        <p class="changelog-intro">欢迎使用升级后的班级量化考核管理系统！本次更新内容如下：</p>
+        <ul class="changelog-list">
+          <li v-for="(item, i) in changelogList" :key="i">{{ item }}</li>
+        </ul>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="onChangelogClose">我知道了</el-button>
+      </template>
+    </el-dialog>
+  </el-container>

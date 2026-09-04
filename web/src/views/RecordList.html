@@ -1,0 +1,70 @@
+  <div class="page-container">
+    <el-card>
+      <div class="toolbar">
+        <el-select v-model="query.category" placeholder="类别" clearable style="width:120px">
+          <el-option label="学习" value="学习" />
+          <el-option label="寝室" value="寝室" />
+          <el-option label="日常" value="日常" />
+          <el-option label="两操" value="两操" />
+          <el-option label="加分" value="加分" />
+        </el-select>
+        <el-input v-model="query.subject_or_item" placeholder="科目/项目" clearable style="width:150px" />
+        <el-input v-model.number="query.target_user_id" placeholder="学生ID" clearable style="width:120px" />
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          value-format="YYYY-MM-DD"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          style="width:280px"
+        />
+        <el-button type="primary" :icon="Search" @click="onSearch">查询</el-button>
+        <el-button :icon="Refresh" @click="onReset">重置</el-button>
+        <div class="flex-grow"></div>
+        <el-button type="success" :icon="Download" :loading="exporting" @click="onExport">导出 Excel</el-button>
+      </div>
+
+      <el-table :data="list" v-loading="loading" border style="margin-top:8px">
+        <el-table-column prop="target_name" label="学生" min-width="100" />
+        <el-table-column prop="category" label="类别" width="80">
+          <template #default="{ row }">
+            <el-tag :type="row.category === '加分' ? 'success' : 'info'" size="small" effect="plain">{{ row.category }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="subject_or_item" label="科目/项目" min-width="100" />
+        <el-table-column prop="score" label="分值" width="80">
+          <template #default="{ row }">
+            <span :class="row.score < 0 ? 'score-minus' : 'score-plus'">{{ row.score }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="reason" label="原因" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="operator_name" label="操作人" width="100" />
+        <el-table-column prop="record_date" label="记录日期" width="110">
+          <template #default="{ row }">{{ formatDate(row.record_date) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="90" fixed="right">
+          <template #default="{ row }">
+            <el-button
+              v-if="userStore.isAdmin"
+              type="danger"
+              size="small"
+              link
+              @click="onDelete(row)"
+            >撤销</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <el-pagination
+        class="pager"
+        v-model:current-page="query.page"
+        v-model:page-size="query.page_size"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="loadData"
+        @current-change="loadData"
+      />
+    </el-card>
+  </div>

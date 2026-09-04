@@ -1,0 +1,5 @@
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.hint { color: var(--text-dim); font-size: 13px; }
+.gh-link { color: var(--accent); font-size: 13px; text-decoration: none; }
+.gh-link:hover { text-decoration: underline; }
+.pager { margin-top: 16px; justify-content: flex-end; }

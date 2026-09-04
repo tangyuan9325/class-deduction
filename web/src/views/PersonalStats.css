@@ -1,0 +1,7 @@
+.stat-card { text-align: center; padding: 8px 0; }
+.stat-label { color: var(--text-dim); font-size: 13px; margin-bottom: 8px; }
+.stat-value { font-size: 28px; font-weight: 700; color: var(--text-main); }
+.stat-value.minus { color: var(--danger); }
+.stat-value.plus { color: var(--success); }
+.minus { color: var(--danger); font-weight: 600; }
+.plus { color: var(--success); font-weight: 600; }

@@ -1,0 +1,42 @@
+
+  <div class="page-container">
+    <el-card>
+      <div class="about-head">
+        <h2 class="about-name">{{ meta?.name || '班级量化考核管理系统' }}</h2>
+        <div class="about-version">版本：v{{ meta?.version || '-' }}</div>
+        <div class="about-semester" v-if="meta?.semester_start">本学期起始：{{ meta.semester_start }}</div>
+      </div>
+    </el-card>
+
+    <el-card style="margin-top:16px">
+      <div class="card-title">克隆仓库引导</div>
+      <p class="about-desc">本系统源码托管在 GitHub，支持克隆到本地自行部署、二次开发或自定义功能。复制以下命令即可克隆仓库：</p>
+      <div class="code-line">
+        <code class="code-text">{{ cloneCmd }}</code>
+        <el-button size="small" type="primary" link :icon="CopyDocument" @click="copyClone">复制命令</el-button>
+      </div>
+      <el-divider />
+      <div class="card-title">部署步骤（三选一）</div>
+      <div class="deploy-steps">
+        <div class="deploy-step"><b>方式一 · 一键运行（推荐）</b><br/>克隆后进入目录，执行 <code>go build -o class-deduction ./cmd</code>，再运行 <code>./class-deduction</code>，浏览器访问 <code>http://localhost:8080</code>。</div>
+        <div class="deploy-step"><b>方式二 · 前端二次开发</b><br/>进入 <code>web</code> 目录执行 <code>npm install &amp;&amp; npm run dev</code>，前端源码在 <code>web/src</code>，每个模块均已拆分为独立的 html / css / js 文件。</div>
+        <div class="deploy-step"><b>方式三 · 自动部署（GitHub Actions）</b><br/>推送代码到 main 分支即自动构建、测试并产出 Linux 可执行文件；配置服务器密钥后还可自动部署到你的服务器。</div>
+      </div>
+      <el-divider />
+      <div class="card-title">默认账号</div>
+      <el-table :data="accounts" border>
+        <el-table-column prop="role" label="角色" width="100" />
+        <el-table-column prop="username" label="账号" width="150" />
+        <el-table-column prop="password" label="初始密码" width="130" />
+        <el-table-column prop="desc" label="说明" />
+      </el-table>
+      <p class="about-desc" style="margin-top:8px">生产环境请尽快修改默认密码；GitHub 集成通过环境变量 <code>APP_GITHUB_TOKEN</code> / <code>APP_GITHUB_REPO</code> 注入。</p>
+    </el-card>
+
+    <el-card style="margin-top:16px">
+      <div class="card-title">v{{ meta?.version || '1.1.0' }} 更新日志</div>
+      <ul class="changelog-list">
+        <li v-for="(item, i) in meta?.changelog || []" :key="i">{{ item }}</li>
+      </ul>
+    </el-card>
+  </div>

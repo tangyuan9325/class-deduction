@@ -1,0 +1,81 @@
+  <div class="page-container">
+    <el-card>
+      <div class="toolbar">
+        <span class="card-title">班级看板</span>
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          value-format="YYYY-MM-DD"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          style="width:280px"
+        />
+        <el-button type="primary" :icon="Search" @click="loadData">查询</el-button>
+      </div>
+    </el-card>
+
+    <div class="stat-card-row">
+      <el-card>
+        <div class="stat-card">
+          <div class="stat-label">累计扣分</div>
+          <div class="stat-value minus">{{ data.total_deduct }}</div>
+        </div>
+      </el-card>
+      <el-card>
+        <div class="stat-card">
+          <div class="stat-label">累计加分</div>
+          <div class="stat-value plus">{{ data.total_bonus }}</div>
+        </div>
+      </el-card>
+      <el-card>
+        <div class="stat-card">
+          <div class="stat-label">净分</div>
+          <div class="stat-value" :class="data.total_score < 0 ? 'minus' : 'plus'">{{ data.total_score }}</div>
+        </div>
+      </el-card>
+      <el-card>
+        <div class="stat-card">
+          <div class="stat-label">记录总数</div>
+          <div class="stat-value">{{ data.total_count }}</div>
+        </div>
+      </el-card>
+      <el-card>
+        <div class="stat-card">
+          <div class="stat-label">涉及科目/项</div>
+          <div class="stat-value">{{ (data.by_subject || []).length }}</div>
+        </div>
+      </el-card>
+      <el-card>
+        <div class="stat-card">
+          <div class="stat-label">统计天数</div>
+          <div class="stat-value">{{ (data.by_day || []).length }}</div>
+        </div>
+      </el-card>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-box">
+        <div class="card-title">各科/项目扣分占比</div>
+        <div ref="pieRef" class="chart-inner"></div>
+      </div>
+      <div class="chart-box">
+        <div class="card-title">每日扣分趋势</div>
+        <div ref="lineRef" class="chart-inner"></div>
+      </div>
+    </div>
+
+    <el-card style="margin-top:16px">
+      <div class="card-title">扣分排名 TOP 10（负分越多越靠前）</div>
+      <el-table :data="data.top_rank || []" border>
+        <el-table-column type="index" label="排名" width="80" />
+        <el-table-column prop="target_name" label="学生" />
+        <el-table-column prop="count" label="记录数" width="120" />
+        <el-table-column prop="score" label="累计扣分" width="120">
+          <template #default="{ row }">
+            <span :class="row.score < 0 ? 'minus' : 'plus'">{{ row.score }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+  </div>

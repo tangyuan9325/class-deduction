@@ -1,0 +1,116 @@
+  <div class="page-container">
+    <el-card>
+      <div class="toolbar">
+        <span class="card-title">用户管理</span>
+        <el-input v-model="query.keyword" placeholder="姓名/账号" clearable style="width:180px" :prefix-icon="Search" @keyup.enter="onSearch" />
+        <el-select v-model="query.role" placeholder="角色" clearable style="width:130px">
+          <el-option label="管理员" value="admin" />
+          <el-option label="班主任" value="teacher" />
+          <el-option label="学生" value="student" />
+        </el-select>
+        <el-button type="primary" :icon="Search" @click="onSearch">查询</el-button>
+        <div class="flex-grow"></div>
+        <el-button type="primary" :icon="Plus" @click="onAdd">新增用户</el-button>
+      </div>
+
+      <el-table :data="list" v-loading="loading" border>
+        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column prop="username" label="账号" />
+        <el-table-column prop="real_name" label="姓名" />
+        <el-table-column prop="role" label="角色" width="100">
+          <template #default="{ row }">
+            <el-tag :type="roleTagType(row.role)" effect="plain">{{ roleText(row.role) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="class_id" label="班级" width="100">
+          <template #default="{ row }">{{ row.class_id || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="320" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" link type="success" @click="onPermission(row)">分配权限</el-button>
+            <el-button size="small" link type="primary" @click="onEdit(row)">编辑</el-button>
+            <el-button size="small" link type="warning" @click="onReset(row)">重置密码</el-button>
+            <el-button size="small" link type="danger" @click="onDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <el-pagination
+        class="pager"
+        v-model:current-page="query.page"
+        v-model:page-size="query.page_size"
+        :page-sizes="[10, 20, 50]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="loadData"
+        @current-change="loadData"
+      />
+    </el-card>
+
+    <el-dialog v-model="dialog.visible" :title="dialog.title" width="460px">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
+        <el-form-item v-if="!form.id" label="账号" prop="username">
+          <el-input v-model="form.username" placeholder="登录账号" />
+        </el-form-item>
+        <el-form-item v-if="!form.id" label="密码" prop="password">
+          <el-input v-model="form.password" type="password" show-password placeholder="初始密码" />
+        </el-form-item>
+        <el-form-item label="姓名" prop="real_name">
+          <el-input v-model="form.real_name" placeholder="真实姓名" />
+        </el-form-item>
+        <el-form-item label="角色" prop="role">
+          <el-select v-model="form.role" style="width:100%">
+            <el-option label="管理员" value="admin" />
+            <el-option label="班主任" value="teacher" />
+            <el-option label="学生" value="student" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="班级ID">
+          <el-input-number v-model="form.class_id" :min="0" controls-position="right" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="onSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="pwdDialog.visible" title="重置密码" width="400px">
+      <el-form label-width="90px">
+        <el-form-item label="用户">
+          <span>{{ pwdDialog.name }}</span>
+        </el-form-item>
+        <el-form-item label="新密码">
+          <el-input v-model="pwdDialog.password" type="password" show-password placeholder="新密码" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="pwdDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="pwdDialog.loading" @click="onSubmitPwd">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="permDialog.visible" title="分配扣分权限" width="440px">
+      <el-form label-width="90px">
+        <el-form-item label="学生">
+          <span>{{ permDialog.name }}</span>
+        </el-form-item>
+        <el-form-item label="可扣分类别">
+          <el-select v-model="permDialog.categories" multiple placeholder="选择该学生可录入的扣分类别" style="width:100%">
+            <el-option label="学习" value="学习" />
+            <el-option label="寝室" value="寝室" />
+            <el-option label="日常" value="日常" />
+            <el-option label="两操" value="两操" />
+            <el-option label="加分" value="加分" />
+            <el-option label="查看班级" value="查看班级" />
+            <el-option label="查看扣分记录" value="查看扣分记录" />
+          </el-select>
+          <div class="perm-hint">提示：未勾选的类别该学生无法录入；"加分"是 1.1.0 新增的独立加分权限；勾选"查看班级"可看班级看板/小结/汇总；勾选"查看扣分记录"可看全量扣分明细；班主任与管理员拥有全部权限。</div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="permDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="permDialog.loading" @click="onSubmitPerm">确定</el-button>
+      </template>
+    </el-dialog>
+  </div>

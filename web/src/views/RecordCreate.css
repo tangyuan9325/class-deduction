@@ -1,0 +1,2 @@
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.hint { color: var(--text-dim); font-size: 13px; }

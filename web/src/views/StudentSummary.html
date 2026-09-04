@@ -1,0 +1,54 @@
+
+  <div class="page-container">
+    <el-card>
+      <div class="toolbar">
+        <span class="card-title">同学扣分汇总</span>
+        <el-radio-group v-model="period">
+          <el-radio-button value="daily">每日</el-radio-button>
+          <el-radio-button value="weekly">每周</el-radio-button>
+          <el-radio-button value="monthly">每月</el-radio-button>
+        </el-radio-group>
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          value-format="YYYY-MM-DD"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          style="width:300px"
+        />
+        <el-button type="primary" :icon="Search" @click="onSearch">查询</el-button>
+        <div class="flex-grow"></div>
+        <el-button type="success" :icon="Download" :loading="exporting" @click="onExport">导出 Excel</el-button>
+      </div>
+      <div class="summary-head" v-if="data.period_label">
+        <span class="summary-period">{{ data.period_label }} · {{ data.start_date }} ~ {{ data.end_date }}</span>
+      </div>
+      <el-table :data="data.rows || []" v-loading="loading" border style="margin-top:8px">
+        <el-table-column type="index" label="序号" width="70" />
+        <el-table-column prop="real_name" label="姓名" min-width="100" />
+        <el-table-column prop="username" label="账号" min-width="120" />
+        <el-table-column prop="class_id" label="班级" width="80" />
+        <el-table-column prop="record_count" label="记录数" width="90" />
+        <el-table-column prop="deduct_score" label="扣分合计" width="110">
+          <template #default="{ row }"><span class="minus">{{ row.deduct_score }}</span></template>
+        </el-table-column>
+        <el-table-column prop="bonus_score" label="加分合计" width="110">
+          <template #default="{ row }"><span class="plus">{{ row.bonus_score }}</span></template>
+        </el-table-column>
+        <el-table-column prop="net_score" label="净分" width="100">
+          <template #default="{ row }">
+            <span :class="row.net_score < 0 ? 'minus' : 'plus'">{{ row.net_score }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="类别明细" min-width="180">
+          <template #default="{ row }">
+            <el-tag v-for="(v, k) in row.by_category" :key="k" size="small" style="margin-right:4px" :type="v < 0 ? 'danger' : 'success'" effect="plain">
+              {{ k }}:{{ v }}
+            </el-tag>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-empty v-if="!data.rows || data.rows.length === 0" description="暂无学生数据" />
+    </el-card>
+  </div>
