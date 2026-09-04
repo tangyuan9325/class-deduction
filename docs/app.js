@@ -331,5 +331,6 @@ function bindEvents(){
   $('btnLogin').onclick=doLogin;
   $('loginPass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
   $('btnLogout').onclick=logout;
+  $('btnChgPass').onclick=()=>openChangePass(false);
   $('btnChangelogOk').onclick=markChangelogSeen;
 }
