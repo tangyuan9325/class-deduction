@@ -225,9 +225,9 @@ function restoreSession(){
 // ============================================================
 function menuDefs(){
   const m=[];
-  m.push({key:'dashboard', ico:'📊', label:'班级看板', show:()=>true});
+  m.push({key:'dashboard', ico:'📊', label:'班级看板', show:()=> canViewStats()});
   m.push({key:'summary', ico:'📝', label:'周/学期小结', show:()=>true});
-  m.push({key:'student-summary', ico:'📋', label:'同学扣分汇总', show:()=>true});
+  m.push({key:'student-summary', ico:'📋', label:'同学扣分汇总', show:()=> canViewStats()});
   m.push({key:'record-create', ico:'➖', label:'录入扣分', show:()=> canEnter(me.role,'学习')||canEnter(me.role,'寝室')||canEnter(me.role,'日常')||canEnter(me.role,'两操')});
   m.push({key:'bonus-create', ico:'➕', label:'录入加分', show:()=> canEnter(me.role,'加分')});
   m.push({key:'records', ico:'🗂️', label:'扣分记录', show:()=> canViewRecords()});

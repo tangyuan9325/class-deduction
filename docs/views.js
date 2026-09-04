@@ -104,35 +104,39 @@ function renderDashboard(main){
 // ============================================================
 let sumScope='class', sumPeriod='week', sumUserId='', sumDate='';
 function renderSummary(main){
-  const scopeTab = t=>`<div class="tabs"><button class="${sumScope===t?'on':''}" data-sum-scope="${t}">${t==='class'?'班级小结':'个人小结'}</button></div>`;
+  const staff=isStaff();
+  const canClass=canViewStats();
+  if(!canClass && sumScope==='class') sumScope='personal';
+  if(!staff){ sumUserId = me.real_name || me.username; }
   main.innerHTML = `
   <div class="page-head"><div>
     <div class="page-title">周/学期小结</div>
-    <div class="page-sub">班级或个人的一周 / 一学期表现总结</div>
+    <div class="page-sub">${canClass?'班级或本人':'本人'}的一周 / 一学期表现总结</div>
   </div></div>
   <div class="toolbar">
-    <div class="tabs" id="sumScopeTabs">
+    ${canClass? `<div class="tabs" id="sumScopeTabs">
       <button class="${sumScope==='class'?'on':''}" data-v="class">班级小结</button>
       <button class="${sumScope==='personal'?'on':''}" data-v="personal">个人小结</button>
-    </div>
+    </div>` : ''}
     <div class="tabs">
       <button class="${sumPeriod==='week'?'on':''}" data-v="week">本周</button>
       <button class="${sumPeriod==='semester'?'on':''}" data-v="semester">本学期</button>
     </div>
-    ${sumScope==='personal' ? `<input id="sumUserId" placeholder="输入学生账号或姓名" value="${esc(sumUserId)}" style="width:180px">` : ''}
+    ${sumScope==='personal' ? (staff ? `<input id="sumUserId" placeholder="输入学生账号或姓名" value="${esc(sumUserId)}" style="width:180px">` : `<span class="hint" style="align-self:center">本人：${esc(me.real_name||me.username)}</span>`) : ''}
     <button class="btn mini" id="btnSumDate">本周(截至今天)</button>
   </div>
   <div id="sumBody"><div class="empty">加载中…</div></div>`;
-  const tabs = main.querySelectorAll('#sumScopeTabs button');
+  const tabs = canClass ? main.querySelectorAll('#sumScopeTabs button') : [];
   tabs.forEach(b=>b.onclick=()=>{ sumScope=b.dataset.v; renderSummary(main); });
-  main.querySelectorAll('.tabs')[1].querySelectorAll('button').forEach(b=>b.onclick=()=>{ sumPeriod=b.dataset.v; renderSummary(main); });
+  const periodTabs = canClass ? main.querySelectorAll('.tabs')[1].querySelectorAll('button') : main.querySelectorAll('.tabs')[0].querySelectorAll('button');
+  periodTabs.forEach(b=>b.onclick=()=>{ sumPeriod=b.dataset.v; renderSummary(main); });
   const ui = main.querySelector('#sumUserId');
   if(ui) ui.onchange=()=>{ sumUserId=ui.value.trim(); renderSummary(main); };
   main.querySelector('#btnSumDate').onclick=()=>renderSummary(main);
   // 计算
   const range = sumPeriod==='week' ? weekRange() : [S.meta.semester_start||'2026-01-01', todayStr()];
   const targetUid = sumScope==='personal'
-    ? ((S.users||[]).find(u=>u.role!=='viewer' && (u.username===sumUserId || u.real_name===sumUserId)) || {}).id
+    ? (staff ? ((S.users||[]).find(u=>u.role!=='viewer' && (u.username===sumUserId || u.real_name===sumUserId)) || {}).id : me.id)
     : null;
   const rs = recordsOf(targetUid, range);
   const weekNo = weekNumOf(todayStr());
@@ -178,6 +182,7 @@ function renderSummary(main){
 // ============================================================
 let ssPeriod='daily';
 function renderStudentSummary(main){
+  if(!canViewStats()){ main.innerHTML='<div class="empty">无查看班级权限</div>'; return; }
   main.innerHTML = `
   <div class="page-head"><div><div class="page-title">同学扣分汇总</div><div class="page-sub">按日 / 周 / 月查看每个同学的扣分点总结</div></div></div>
   <div class="toolbar">
@@ -509,16 +514,6 @@ function renderAbout(main){
   <div class="card"><div class="card-title">克隆仓库</div>
     <div class="code-line"><code>${cloneCmd}</code><button class="btn mini" id="btnCopy">复制命令</button></div>
     <div class="hint">克隆后进入目录：<code style="color:var(--accent)">go build -o class-deduction ./cmd &amp;&amp; ./class-deduction</code>，浏览器访问 <code style="color:var(--accent)">http://localhost:8080</code></div>
-  </div>
-  <div class="card"><div class="card-title">默认账号</div>
-    <div class="table-wrap"><table>
-      <thead><tr><th>角色</th><th>账号</th><th>密码</th><th>说明</th></tr></thead>
-      <tbody>
-        <tr><td>管理员</td><td>admin</td><td>admin123</td><td>全部权限</td></tr>
-        <tr><td>班主任</td><td>banzhuren</td><td>123456</td><td>全部权限（崔孝禹）</td></tr>
-        <tr><td>班级看板</td><td>kandban</td><td>123456</td><td>只读看板账号，无任何操作权限（v1.1.0 新增）</td></tr>
-        <tr><td>学生</td><td>stu+学号</td><td>123456</td><td>首次登录请修改密码</td></tr>
-      </tbody></table></div>
   </div>
   <div class="card"><div class="card-title">v1.1.0 更新日志</div>
     <ul class="notes">${(S.meta.changelog||[]).map(c=>`<li>${esc(c)}</li>`).join('')}</ul>
