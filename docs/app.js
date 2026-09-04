@@ -45,8 +45,14 @@ function sha256hex(str){
     .then(buf => Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join(''));
 }
 function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-function fmtDate(s){ return s ? String(s).slice(0,10) : ''; }
-function isSameDay(a,b){ return String(a).slice(0,10)===String(b).slice(0,10); }
+function fmtDate(s){
+  if(!s) return '';
+  if(s instanceof Date) return s.getFullYear()+'-'+String(s.getMonth()+1).padStart(2,'0')+'-'+String(s.getDate()).padStart(2,'0');
+  return String(s).slice(0,10);
+}
+function isSameDay(a,b){
+  return fmtDate(a)===fmtDate(b);
+}
 function weekRange(ref){
   // 返回 [周一, 周日]（以当前周为基准，用于周小结）
   const d = ref ? new Date(ref) : new Date();
