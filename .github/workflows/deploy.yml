@@ -162,26 +162,17 @@ jobs:
             # 健康检查
             curl -sf "http://127.0.0.1:$APP_PORT/health" || { echo "HEALTH_FAIL"; exit 1; }
 
-      # 学生名单安全导入：名单存于 Secret ROSTER_CSV，不进入公开仓库。
-      # 首次部署时写入服务器并创建学生账号（幂等，可重复执行）。
-      - name: Import student roster (from secret)
-        if: ${{ secrets.ROSTER_CSV != '' }}
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_PORT }}
-          script: |
-            set -e
-            APP_DIR="${{ secrets.DEPLOY_PATH || '/opt/class-deduction' }}"
-            APP_PORT="${{ secrets.DEPLOY_APP_PORT || '8080' }}"
-            cd "$APP_DIR"
-            printf '%s\n' "${{ secrets.ROSTER_CSV }}" > data/roster.csv
-            chmod 600 data/roster.csv
-            python3 -c "import requests" 2>/dev/null || pip3 install --quiet requests
-            python3 scripts/import_students.py \
-              --base-url "http://127.0.0.1:$APP_PORT" \
-              --csv data/roster.csv \
-              --admin admin \
-              --password "${{ secrets.ADMIN_PASSWORD || 'admin123' }}"
+            # 学生名单安全导入：名单存于 Secret ROSTER_CSV，不进入公开仓库。
+            # 首次部署时写入服务器并创建学生账号（幂等，可重复执行）。
+            if [ -n "${{ secrets.ROSTER_CSV }}" ]; then
+              printf '%s\n' "${{ secrets.ROSTER_CSV }}" > data/roster.csv
+              chmod 600 data/roster.csv
+              python3 -c "import requests" 2>/dev/null || pip3 install --quiet requests
+              python3 scripts/import_students.py \
+                --base-url "http://127.0.0.1:$APP_PORT" \
+                --csv data/roster.csv \
+                --admin admin \
+                --password "${{ secrets.ADMIN_PASSWORD || 'admin123' }}" || echo "ROSTER_IMPORT_WARN"
+            else
+              echo "NO_ROSTER_SECRET_SKIP"
+            fi
