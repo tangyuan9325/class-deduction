@@ -150,9 +150,9 @@ function pagesStateUrl(){ return `${pagesUrl}data/db.json`; }
 
 async function getStateAPI(){
   // v1.2.0：ETag/If-None-Match —— 数据未变化时返回 304，不消耗 API 配额
-  const headers = {Authorization:'Bearer '+GH_TOKEN, 'cache':'no-store'};
+  const headers = {Authorization:'Bearer '+GH_TOKEN};
   if(stateETag) headers['If-None-Match'] = stateETag;
-  const r = await fetch(apiUrl(SYNC.path), {headers});
+  const r = await fetch(apiUrl(SYNC.path), {headers, cache:'no-store'});
   if(r.status===304){ return {unchanged:true, sha:lastSha, state:null}; }
   if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.message||('读取失败 '+r.status)); }
   stateETag = r.headers.get('ETag') || stateETag;
