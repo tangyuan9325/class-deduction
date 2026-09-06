@@ -149,7 +149,7 @@ function renderSummary(main){
   const catRows = Object.entries(byCat).filter(([k,v])=>v!==0).sort((a,b)=>a[1]-b[1]);
   const topD = topStudents(rs,5,false), topB = topStudents(rs,5,true);
   body.innerHTML = `
-  <div class="card"><div class="card-title">${scopeName} · ${head} · 小结</div>
+  <div class="card"><div class="card-title">${esc(scopeName)} · ${esc(head)} · 小结</div>
     <div class="stats">
       <div class="stat"><div class="lbl">累计扣分</div><div class="val red">${totalD}</div></div>
       <div class="stat"><div class="lbl">累计加分</div><div class="val green">+${totalB}</div></div>
@@ -159,9 +159,9 @@ function renderSummary(main){
     <div style="font-size:13px;color:var(--text2);line-height:1.9">
       ${rs.length===0 ? '本周期暂无扣分/加分记录，表现良好，请继续保持。' :
         `本${sumPeriod==='week'?'周':'学期'}累计扣分 ${totalD} 分、加分 +${totalB} 分，净分 ${totalD+totalB} 分。
-         ${catRows.map(([k,v])=>(v<0?'扣分':'加分')+'集中在「'+k+'」('+v+'分)').join('；')}。
-         ${topD.length? '主要扣分：'+topD.map(([n,v])=>n+'('+v+')').join('、')+'。':''}
-         ${topB.length? '主要加分：'+topB.map(([n,v])=>n+'(+'+v+')').join('、')+'。':''}`}
+         ${catRows.map(([k,v])=>(v<0?'扣分':'加分')+'集中在「'+esc(k)+'」('+v+'分)').join('；')}。
+         ${topD.length? '主要扣分：'+topD.map(([n,v])=>esc(n)+'('+v+')').join('、')+'。':''}
+         ${topB.length? '主要加分：'+topB.map(([n,v])=>esc(n)+'(+'+v+')').join('、')+'。':''}`}
     </div>
   </div>
   <div class="grid2">
@@ -221,7 +221,7 @@ function renderStudentSummary(main){
     : '<tr><td colspan="7"><div class="empty">本周期暂无扣分记录</div></td></tr>';
   main.querySelector('#btnExportSS').onclick=()=>{
     const lines=[['学号','姓名','扣分总数','加分总数','净分','记录数','主要扣分点'].join(',')];
-    rows.forEach(r=>lines.push([r.u.username.replace('stu',''),r.u.real_name,r.d,'+'+r.b,r.d+r.b,r.n,'"'+r.pts.join('；')+'"'].join(',')));
+    rows.forEach(r=>lines.push([csvSafe(r.u.username.replace('stu','')),csvSafe(r.u.real_name),r.d,'+'+r.b,r.d+r.b,r.n,'"'+csvSafe(r.pts.join('；'))+'"'].join(',')));
     const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='同学扣分汇总_'+range[0]+'.csv'; a.click();
   };
@@ -295,7 +295,7 @@ function renderRecordCreate(main, isBonus){
         const u=(S.users||[]).find(x=>x.id===uid);
         S.records.push({id:Date.now()+Math.floor(Math.random()*999), user_id:uid, user_name:u?u.real_name:'#'+uid, category:cat, subject_or_item:item, score:cat==='加分'?score:-score, reason, record_date:date, created_at:new Date().toISOString(), revoked:false});
       }
-      await save();
+      await save(isBonus?'录入加分':'录入扣分', selected.size+'人');
       toast(`已为 ${selected.size} 名学生录入${isBonus?'加分':'扣分'} ✓`);
       renderAll();
     }catch(e){ toast('提交失败：'+e.message, true); }
@@ -344,7 +344,7 @@ function renderRecords(main){
       const y=await askConfirm('确认撤销这条记录？');
       if(!y) return;
       const r=(S.records||[]).find(x=>x.id===id);
-      if(r){ r.revoked=true; await save(); toast('已撤销 ✓'); draw(); renderAll(); }
+      if(r){ r.revoked=true; await save('撤销记录', r.id); toast('已撤销 ✓'); draw(); renderAll(); }
     });
     main.querySelector('#flCat').onchange=e=>{ cat=e.target.value; page=1; draw(); };
     main.querySelector('#flGo').onclick=()=>{ kw=main.querySelector('#flKw').value.trim(); page=1; draw(); };
@@ -353,7 +353,7 @@ function renderRecords(main){
     main.querySelector('#pgNext').onclick=()=>{ if(page*size<total){page++; draw();} };
     main.querySelector('#btnExp').onclick=()=>{
       const lines=[['日期','学生','类别','项目','分值','原因'].join(',')];
-      rs.forEach(r=>lines.push([fmtDate(r.record_date),r.user_name,r.category,r.subject_or_item,r.score,(r.reason||'')].join(',')));
+      rs.forEach(r=>lines.push([csvSafe(fmtDate(r.record_date)),csvSafe(r.user_name),csvSafe(r.category),csvSafe(r.subject_or_item),r.score,csvSafe(r.reason||'')].join(',')));
       const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
       const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='扣分记录_'+todayStr()+'.csv'; a.click();
     };
@@ -407,18 +407,22 @@ function renderUsers(main){
   main.querySelectorAll('[data-perm]').forEach(b=>b.onclick=()=>openPermDialog(+b.dataset.perm, main));
   main.querySelectorAll('[data-reset]').forEach(b=>b.onclick=async()=>{
     const u=(S.users||[]).find(x=>x.id===+b.dataset.reset);
+    const auth=await requirePass();
+    if(!auth) return;
     const y=await askConfirm(`将「${u.real_name}」的密码重置为 123456？`);
     if(!y) return;
-    u.pass = await sha256hex('123456');
+    u.pass = await makePwdRecord('123456');
     u.must_change = u.role==='student';
-    await save(); toast('已重置为 123456 ✓'); renderUsers(main);
+    await save('重置密码', u.username); toast('已重置为初始密码 ✓'); renderUsers(main);
   });
   main.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
     const u=(S.users||[]).find(x=>x.id===+b.dataset.del);
+    const auth=await requirePass();
+    if(!auth) return;
     const y=await askConfirm(`删除学生「${u.real_name}」？其记录将保留。`);
     if(!y) return;
     S.users = S.users.filter(x=>x.id!==u.id);
-    await save(); toast('已删除'); renderUsers(main);
+    await save('删除用户', u.username); toast('已删除'); renderUsers(main);
   });
 }
 function openUserDialog(existing, students, main){
@@ -436,13 +440,15 @@ function openUserDialog(existing, students, main){
     if(!name||!no){ toast('请填写姓名和学号', true); return; }
     const uname='stu'+no;
     if(existing){
+      const auth=await requirePass(); if(!auth) return;
       existing.real_name=name;
     }else{
       if((S.users||[]).some(u=>u.username===uname)){ toast('该学号已存在', true); return; }
+      const auth=await requirePass(); if(!auth) return;
       const maxId=Math.max(0, ...(S.users||[]).map(u=>u.id));
-      S.users.push({id:maxId+1, username:uname, pass:await sha256hex('123456'), real_name:name, role:'student', class_id:1, must_change:true, gender:null, permissions:[]});
+      S.users.push({id:maxId+1, username:uname, pass:await makePwdRecord('123456'), real_name:name, role:'student', class_id:1, must_change:true, gender:null, permissions:[]});
     }
-    await save(); toast('已保存 ✓'); close(); renderUsers(main);
+    await save(existing?'编辑学生':'新建学生', uname); toast('已保存 ✓'); close(); renderUsers(main);
   };
 }
 function openPermDialog(uid, main){
@@ -459,9 +465,10 @@ function openPermDialog(uid, main){
   const close=()=>d.remove();
   d.querySelector('#pdCancel').onclick=close;
   d.querySelector('#pdOk').onclick=async()=>{
+    const auth=await requirePass(); if(!auth) return;
     u.permissions=[...cur];
     if(uid===me.id) me.permissions=u.permissions;
-    await save(); toast('权限已保存 ✓'); close(); renderUsers(main);
+    await save('修改权限', u.username); toast('权限已保存 ✓'); close(); renderUsers(main);
   };
 }
 
@@ -494,12 +501,12 @@ function renderFeedback(main){
     if(!content){ toast('请输入反馈内容', true); return; }
     S.feedback=S.feedback||[];
     S.feedback.push({id:Date.now()+Math.floor(Math.random()*999), user_id:me.id, user_name:me.real_name||me.username, user_role:me.role, content, contact:main.querySelector('#fbContact').value.trim(), status:'open', github_issue_num:0, created_at:new Date().toISOString()});
-    await save(); toast('反馈提交成功，感谢你的建议！ ✓'); renderFeedback(main);
+    await save('提交反馈', me.username); toast('反馈提交成功，感谢你的建议！ ✓'); renderFeedback(main);
   };
   if(admin){
     main.querySelectorAll('[data-fb]').forEach(b=>b.onclick=async()=>{
       const f=(S.feedback||[]).find(x=>x.id===+b.dataset.fb);
-      if(f){ f.status=b.dataset.st; await save(); toast('状态已更新 ✓'); renderFeedback(main); }
+      if(f){ f.status=b.dataset.st; await save('处理反馈', f.id); toast('状态已更新 ✓'); renderFeedback(main); }
     });
   }
 }
@@ -515,11 +522,11 @@ function renderAbout(main){
     <div class="code-line"><code>${cloneCmd}</code><button class="btn mini" id="btnCopy">复制命令</button></div>
     <div class="hint">克隆后进入目录：<code style="color:var(--accent)">go build -o class-deduction ./cmd &amp;&amp; ./class-deduction</code>，浏览器访问 <code style="color:var(--accent)">http://localhost:8080</code></div>
   </div>
-  <div class="card"><div class="card-title">v1.1.0 更新日志</div>
+  <div class="card"><div class="card-title">v1.2.0 更新日志</div>
     <ul class="notes">${(S.meta.changelog||[]).map(c=>`<li>${esc(c)}</li>`).join('')}</ul>
   </div>
   <div class="card"><div class="card-title">关于数据存储</div>
-    <div class="hint" style="line-height:1.9">本在线版采用「GitHub 仓库即数据库」方案：所有数据保存在本仓库 <code>docs/data/db.json</code>，通过 GitHub API + Token 读写实现跨设备持久化，多端每 5 秒轮询实现实时同步。源码中的 Go 后端（Gin+GORM+SQLite）仍保留，供本机/自建服务器使用，功能完全一致。</div>
+    <div class="hint" style="line-height:1.9">本在线版采用「GitHub 仓库即数据库」方案：所有数据保存在本仓库 <code>docs/data/db.json</code>，通过 GitHub API + Token 读写实现跨设备持久化；多端 8s/30s 自适应轮询（ETag 优化配额）实现实时同步。源码中的 Go 后端（Gin+GORM+SQLite）仍保留，供本机/自建服务器使用，功能完全一致。</div>
   </div>`;
   main.querySelector('#btnCopy').onclick=async()=>{
     try{ await navigator.clipboard.writeText(cloneCmd); toast('克隆命令已复制 ✓'); }catch(e){ toast('复制失败，请手动选择复制', true); }
@@ -541,14 +548,14 @@ function openChangePass(force){
   d.querySelector('#cpCancel').onclick=close;
   d.querySelector('#cpOk').onclick=async()=>{
     const u=(S.users||[]).find(x=>x.id===me.id);
-    const oldH=await sha256hex(d.querySelector('#cpOld').value);
-    if(oldH!==u.pass){ toast('当前密码错误', true); return; }
+    const v=await verifyPwd(d.querySelector('#cpOld').value, u.pass);
+    if(!v.ok){ toast('当前密码错误', true); return; }
     const n1=d.querySelector('#cpNew').value, n2=d.querySelector('#cpNew2').value;
     if(n1.length<6){ toast('新密码至少 6 位', true); return; }
     if(n1!==n2){ toast('两次输入不一致', true); return; }
-    u.pass=await sha256hex(n1);
+    u.pass=await makePwdRecord(n1);
     u.must_change=false;
-    await save(); toast('密码已修改 ✓'); close();
+    await save('修改密码', me.username); toast('密码已修改 ✓'); close();
   };
 }
 
@@ -565,7 +572,7 @@ function openChangePass(force){
     if(seedRes && seedRes.ok){ const st=await seedRes.json(); applyState(st); ok=true; }
   }
   if(!ok){
-    applyState({version:3, meta:{version:APP_VERSION, semester_start:'2026-09-01', changelog:[]}, users:[], records:[], feedback:[], seen_changelog:{}, updated_at:new Date().toISOString()});
+    applyState({version:DB_VERSION, meta:{version:APP_VERSION, semester_start:'2026-09-01', changelog:[]}, users:[], records:[], feedback:[], audit:[], seen_changelog:{}, updated_at:new Date().toISOString()});
   }
   restoreSession();
   startPolling();

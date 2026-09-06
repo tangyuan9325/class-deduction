@@ -129,13 +129,41 @@ tr:hover td{background:rgba(88,166,255,.04)}
 .tabs button.on{background:linear-gradient(135deg,rgba(31,111,235,.35),rgba(56,139,253,.2));color:var(--accent)}
 .empty{text-align:center;color:var(--text3);padding:40px 0;font-size:13px}
 .check{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;cursor:pointer;user-select:none}
+/* ===== v1.2.0 移动端抽屉 + 桌面端优化 ===== */
+#btnBurger{display:none}
+#menuBackdrop{display:none}
+.main{width:100%;margin:0 auto}
+@media(max-width:768px){
+  #btnBurger{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;background:var(--panel);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:20px;position:fixed;top:10px;left:10px;z-index:131;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+  #appView.menu-open #btnBurger{opacity:0;pointer-events:none}
+  .side{position:fixed;left:0;top:0;width:248px;height:100vh;z-index:130;transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 0 48px rgba(0,0,0,.55)}
+  #appView.menu-open .side{transform:translateX(0)}
+  #appView.menu-open #menuBackdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:120}
+  .side .brand-sub{display:block}
+  .side .menu-item span{display:inline}
+  .menu-item{justify-content:flex-start}
+  .main{padding:14px;padding-top:64px}
+  .toolbar>*{width:100%}
+  .toolbar input,.toolbar select{width:100%!important}
+  .tabs{width:100%;justify-content:space-between}
+  .tabs button{flex:1;padding:8px 4px}
+  .dialog{padding:20px;width:94vw}
+  .stats{grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px}
+  .page-title{font-size:18px}
+  th,td{padding:8px 8px;font-size:12px}
+  .grid3{grid-template-columns:1fr}
+  .card{padding:14px}
+  .code-line{flex-wrap:wrap}
+  .code-line code{width:100%}
+  #toast{top:auto;bottom:24px}
+}
 </style>
 </head>
 <body>
 <div id="loginView">
   <div class="login-card">
     <div class="login-title">班级量化考核管理系统</div>
-    <div class="login-sub" id="loginSub">v1.1.0 · GitHub Pages 在线版</div>
+    <div class="login-sub" id="loginSub">v1.2.0 · GitHub Pages 在线版</div>
     <div class="fld"><label>账号</label><input id="loginUser" placeholder="教师/学生账号" autocomplete="username"></div>
     <div class="fld"><label>密码</label><input id="loginPass" type="password" placeholder="请输入密码" autocomplete="current-password"></div>
     <div class="remember-row">
@@ -148,11 +176,13 @@ tr:hover td{background:rgba(88,166,255,.04)}
 </div>
 
 <div id="appView" class="hide">
+  <button id="btnBurger" aria-label="打开菜单">☰</button>
+  <div id="menuBackdrop"></div>
   <aside class="side">
     <div class="brand">
       <div class="brand-name">班级量化考核</div>
-      <div class="brand-sub" id="brandSub">v1.1.0</div>
-      <div class="brand-ver" id="brandVer">v1.1.0</div>
+      <div class="brand-sub" id="brandSub">v1.2.0</div>
+      <div class="brand-ver" id="brandVer">v1.2.0</div>
     </div>
     <nav class="menu" id="menu"></nav>
     <div class="userbox">
@@ -166,7 +196,7 @@ tr:hover td{background:rgba(88,166,255,.04)}
 
 <div id="changelogMask" class="mask hide">
   <div class="dialog">
-    <h3>🎉 系统已更新到 v1.1.0</h3>
+    <h3>🎉 系统已更新到 v1.2.0</h3>
     <ul class="notes" id="changelogList"></ul>
     <div class="dlg-btns"><button class="btn" id="btnChangelogOk">我知道了</button></div>
   </div>
@@ -179,9 +209,19 @@ tr:hover td{background:rgba(88,166,255,.04)}
   </div>
 </div>
 
+<div id="passMask" class="mask hide">
+  <div class="dialog" style="max-width:420px">
+    <h3>安全验证</h3>
+    <div id="passMsg" style="font-size:14px;line-height:1.8;margin-bottom:12px"></div>
+    <div class="fld"><input id="passInput" type="password" placeholder="请输入当前密码" autocomplete="current-password"></div>
+    <div class="err" id="passErr" style="text-align:left;min-height:0;margin:6px 0 0"></div>
+    <div class="dlg-btns"><button class="btn ghost" id="btnPassNo">取消</button><button class="btn" id="btnPassOk">确认</button></div>
+  </div>
+</div>
+
 <div id="toast"></div>
-<script src="gh-token.js?v=1.1.0"></script>
-<script src="app.js?v=1.1.0"></script>
-<script src="views.js?v=1.1.0"></script>
+<script src="gh-token.js?v=1.2.0"></script>
+<script src="app.js?v=1.2.0"></script>
+<script src="views.js?v=1.2.0"></script>
 </body>
 </html>
