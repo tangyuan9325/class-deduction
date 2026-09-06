@@ -218,7 +218,7 @@ function mergeState(base, next){
   // 元数据/字典/审计以 next 为准（next 含最新审计；服务器端审计若更新以服务器为准则合并去重）
   merged.meta = next.meta || merged.meta;
   merged.dictionary = next.dictionary || merged.dictionary;
-  merged.audit = (next.audit||[]).concat(merged.audit||[]).filter((v,i,a)=>a.findIndex(x=>x.t===v.t && x.a===v.a && x.u===v.u)===-1).slice(-600);
+  merged.audit = (next.audit||[]).concat(merged.audit||[]).filter((v,i,a)=>a.findIndex(x=>x.t===v.t && x.a===v.a && x.u===v.u)===i).slice(-600);
   merged.version = DB_VERSION;
   return merged;
 }
