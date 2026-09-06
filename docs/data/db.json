@@ -1,1 +1,589 @@
-{"version": 4, "meta": {"version": "1.1.0", "semester_start": "2026-09-01", "changelog": ["【v1.2.0】安全升级：密码改为 PBKDF2 加盐高强度加密存储，旧账号首次登录自动升级——修复\"密码哈希可被直接利用\"问题", "【v1.2.0】安全升级：重置密码/删除用户/改权限/新建用户等敏感操作需二次输入当前密码；所有写操作新增审计日志", "【v1.2.0】性能优化：实时同步改为 8s/30s 自适应轮询 + ETag 缓存，API 配额消耗降低约 90%", "【v1.2.0】稳定性：多端同时录入改为记录级合并，不再互相覆盖、不丢数据", "【v1.2.0】安全修复：修复 CSV 导出公式注入与个别页面 XSS 隐患", "【v1.2.0】体验优化：新增移动端抽屉菜单与桌面端排版优化", "1. 新增数据库持久化：数据实时同步至 GitHub 仓库，换设备/换浏览器数据不丢失", "2. 新增实时更新：多端操作自动同步，扣分/加分即时刷新", "3. 新增班级/个人 周小结、学期小结", "4. 新增每日/每周/每月 每个同学扣分点汇总", "5. 新增加分功能：独立权限、独立录入页面（助人为乐/比赛获奖等 8 类）", "6. 新增意见反馈：学生/家长可提交，班主任可处理并同步到 GitHub Issues", "7. 新增班级看板只读账号 kandban（有密码、无任何操作权限）", "8. 登录支持「保持登录」与「临时登录」两种模式", "9. 前端按模块拆分为独立 html/css/js 文件", "10. 新增关于页：克隆仓库引导 + 部署说明 + 更新日志"]}, "users": [{"id": 1, "username": "admin", "pass": "pbkdf2$600000$nxxzZcb7kb9d32qkXRRokg==$QjdRUZDJaK6hFCrM65FQtuYQGDt6QkajGZ3GsljMtsI=", "real_name": "管理员", "role": "admin", "class_id": 0, "must_change": false, "permissions": []}, {"id": 2, "username": "banzhuren", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "崔孝禹", "role": "teacher", "class_id": 1, "must_change": false, "permissions": []}, {"id": 3, "username": "kandban", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "班级看板", "role": "viewer", "class_id": 1, "must_change": false, "permissions": []}, {"id": 4, "username": "stu02", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "葛姝玲", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 5, "username": "stu03", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "李知远", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 6, "username": "stu04", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "凌家玺", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 7, "username": "stu06", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "吴孜阳", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 8, "username": "stu07", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "应沁晏", "role": "student", "class_id": 1, "must_change": true, "permissions": ["日常"]}, {"id": 9, "username": "stu08", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "于欣冉", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 10, "username": "stu09", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "张千慧", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 11, "username": "stu11", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "陈若铭", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 12, "username": "stu12", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "程泽航", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 13, "username": "stu13", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "翟振滔", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 14, "username": "stu14", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "高歌", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 15, "username": "stu15", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "胡博文", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 16, "username": "stu16", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "胡哲源", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 17, "username": "stu17", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "黄渝翔", "role": "student", "class_id": 1, "must_change": true, "permissions": ["日常"]}, {"id": 18, "username": "stu18", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "赖泓哲", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 19, "username": "stu19", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "李成圆", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 20, "username": "stu20", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "李乙禾", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 21, "username": "stu21", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "厉益和", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 22, "username": "stu22", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "刘炫华", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 23, "username": "stu23", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "毛林轩", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 24, "username": "stu24", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "沙宇桐", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 25, "username": "stu25", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "沈嘉泽", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 26, "username": "stu26", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "施浩哲", "role": "student", "class_id": 1, "must_change": true, "permissions": ["学习"]}, {"id": 27, "username": "stu27", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "汤睿逸", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 28, "username": "stu28", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "汪楚航", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 29, "username": "stu29", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "汪子涵", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 30, "username": "stu30", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "王浩然", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 31, "username": "stu31", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "翁境朗", "role": "student", "class_id": 1, "must_change": true, "permissions": ["寝室"]}, {"id": 32, "username": "stu32", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "邬茗浩", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 33, "username": "stu33", "pass": "8ed9c86d01ae30bfd9145e5edaf7c0331a9283e5ec43bec643a23863849542bc", "real_name": "徐绅源", "role": "student", "class_id": 1, "must_change": false, "permissions": ["日常"]}, {"id": 34, "username": "stu34", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "严佳辉", "role": "student", "class_id": 1, "must_change": true, "permissions": ["日常", "加分"]}, {"id": 35, "username": "stu35", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "尤顺", "role": "student", "class_id": 1, "must_change": true, "permissions": ["日常"]}, {"id": 36, "username": "stu36", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "詹天铭", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 37, "username": "stu37", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "张浩然", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 38, "username": "stu38", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "赵潼鑫", "role": "student", "class_id": 1, "must_change": true, "permissions": ["学习", "寝室", "两操", "日常", "加分", "查看班级", "查看扣分记录"]}, {"id": 39, "username": "stu39", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "郑子晨", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 40, "username": "stu40", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "朱颂喆", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 41, "username": "stu41", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "朱彦奇", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 42, "username": "stu42", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "朱梓昊", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 43, "username": "stu43", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "徐雨辰", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 44, "username": "stu44", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "杨天雪", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 45, "username": "stu45", "pass": "d1f50a53f5d28588b74b9cdb53f1ae7b990e17c422c8c64a088ac492ec141536", "real_name": "方高博", "role": "student", "class_id": 1, "must_change": false, "permissions": []}, {"id": 46, "username": "stu46", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "殷俊逸", "role": "student", "class_id": 1, "must_change": true, "permissions": []}, {"id": 47, "username": "stu47", "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", "real_name": "张宇翔", "role": "student", "class_id": 1, "must_change": true, "permissions": []}], "records": [], "feedback": [], "seen_changelog": {"stu45": true, "stu33": true, "admin": true}, "updated_at": "2026-09-06T07:58:51.000Z", "dictionary": {"deduct": [{"name": "学习", "items": ["语文", "数学", "英语", "物理", "化学", "技术", "地理", "历史", "生物", "政治"]}, {"name": "寝室", "items": ["地未拖", "灯未关", "垃圾未倒", "地不干净", "熄灯后聊天", "床铺不整", "物品摆放乱"]}, {"name": "日常", "items": ["迟到", "卫生", "纪律", "其它"]}, {"name": "两操", "items": ["早操迟到", "早操缺席", "课间操违纪", "眼保健操", "跑操秩序"]}], "bonus": ["助人为乐", "学习进步", "卫生优秀", "纪律良好", "比赛获奖", "班级贡献", "好人好事", "其它加分"]}, "audit": []}
+{
+ "version": 4,
+ "meta": {
+  "version": "1.1.0",
+  "semester_start": "2026-09-01",
+  "changelog": [
+   "【v1.2.0】安全升级：密码改为 PBKDF2 加盐高强度加密存储，旧账号首次登录自动升级——修复\"密码哈希可被直接利用\"问题",
+   "【v1.2.0】安全升级：重置密码/删除用户/改权限/新建用户等敏感操作需二次输入当前密码；所有写操作新增审计日志",
+   "【v1.2.0】性能优化：实时同步改为 8s/30s 自适应轮询 + ETag 缓存，API 配额消耗降低约 90%",
+   "【v1.2.0】稳定性：多端同时录入改为记录级合并，不再互相覆盖、不丢数据",
+   "【v1.2.0】安全修复：修复 CSV 导出公式注入与个别页面 XSS 隐患",
+   "【v1.2.0】体验优化：新增移动端抽屉菜单与桌面端排版优化",
+   "1. 新增数据库持久化：数据实时同步至 GitHub 仓库，换设备/换浏览器数据不丢失",
+   "2. 新增实时更新：多端操作自动同步，扣分/加分即时刷新",
+   "3. 新增班级/个人 周小结、学期小结",
+   "4. 新增每日/每周/每月 每个同学扣分点汇总",
+   "5. 新增加分功能：独立权限、独立录入页面（助人为乐/比赛获奖等 8 类）",
+   "6. 新增意见反馈：学生/家长可提交，班主任可处理并同步到 GitHub Issues",
+   "7. 新增班级看板只读账号 kandban（有密码、无任何操作权限）",
+   "8. 登录支持「保持登录」与「临时登录」两种模式",
+   "9. 前端按模块拆分为独立 html/css/js 文件",
+   "10. 新增关于页：克隆仓库引导 + 部署说明 + 更新日志"
+  ]
+ },
+ "users": [
+  {
+   "id": 1,
+   "username": "admin",
+   "pass": "pbkdf2$600000$nxxzZcb7kb9d32qkXRRokg==$QjdRUZDJaK6hFCrM65FQtuYQGDt6QkajGZ3GsljMtsI=",
+   "real_name": "管理员",
+   "role": "admin",
+   "class_id": 0,
+   "must_change": false,
+   "permissions": []
+  },
+  {
+   "id": 2,
+   "username": "banzhuren",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "崔孝禹",
+   "role": "teacher",
+   "class_id": 1,
+   "must_change": false,
+   "permissions": []
+  },
+  {
+   "id": 3,
+   "username": "kandban",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "班级看板",
+   "role": "viewer",
+   "class_id": 1,
+   "must_change": false,
+   "permissions": []
+  },
+  {
+   "id": 4,
+   "username": "stu02",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "葛姝玲",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 5,
+   "username": "stu03",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "李知远",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 6,
+   "username": "stu04",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "凌家玺",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 7,
+   "username": "stu06",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "吴孜阳",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 8,
+   "username": "stu07",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "应沁晏",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": [
+    "日常"
+   ]
+  },
+  {
+   "id": 9,
+   "username": "stu08",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "于欣冉",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 10,
+   "username": "stu09",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "张千慧",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 11,
+   "username": "stu11",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "陈若铭",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 12,
+   "username": "stu12",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "程泽航",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 13,
+   "username": "stu13",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "翟振滔",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 14,
+   "username": "stu14",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "高歌",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 15,
+   "username": "stu15",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "胡博文",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 16,
+   "username": "stu16",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "胡哲源",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 17,
+   "username": "stu17",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "黄渝翔",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": [
+    "日常"
+   ]
+  },
+  {
+   "id": 18,
+   "username": "stu18",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "赖泓哲",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 19,
+   "username": "stu19",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "李成圆",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 20,
+   "username": "stu20",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "李乙禾",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 21,
+   "username": "stu21",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "厉益和",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 22,
+   "username": "stu22",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "刘炫华",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 23,
+   "username": "stu23",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "毛林轩",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 24,
+   "username": "stu24",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "沙宇桐",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 25,
+   "username": "stu25",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "沈嘉泽",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 26,
+   "username": "stu26",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "施浩哲",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": [
+    "学习"
+   ]
+  },
+  {
+   "id": 27,
+   "username": "stu27",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "汤睿逸",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 28,
+   "username": "stu28",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "汪楚航",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 29,
+   "username": "stu29",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "汪子涵",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 30,
+   "username": "stu30",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "王浩然",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 31,
+   "username": "stu31",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "翁境朗",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": [
+    "寝室"
+   ]
+  },
+  {
+   "id": 32,
+   "username": "stu32",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "邬茗浩",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 33,
+   "username": "stu33",
+   "pass": "8ed9c86d01ae30bfd9145e5edaf7c0331a9283e5ec43bec643a23863849542bc",
+   "real_name": "徐绅源",
+   "role": "student",
+   "class_id": 1,
+   "must_change": false,
+   "permissions": [
+    "日常"
+   ]
+  },
+  {
+   "id": 34,
+   "username": "stu34",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "严佳辉",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": [
+    "日常",
+    "加分"
+   ]
+  },
+  {
+   "id": 35,
+   "username": "stu35",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "尤顺",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": [
+    "日常"
+   ]
+  },
+  {
+   "id": 36,
+   "username": "stu36",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "詹天铭",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 37,
+   "username": "stu37",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "张浩然",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 38,
+   "username": "stu38",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "赵潼鑫",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": [
+    "学习",
+    "寝室",
+    "两操",
+    "日常",
+    "加分",
+    "查看班级",
+    "查看扣分记录"
+   ]
+  },
+  {
+   "id": 39,
+   "username": "stu39",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "郑子晨",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 40,
+   "username": "stu40",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "朱颂喆",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 41,
+   "username": "stu41",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "朱彦奇",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 42,
+   "username": "stu42",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "朱梓昊",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 43,
+   "username": "stu43",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "徐雨辰",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 44,
+   "username": "stu44",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "杨天雪",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 45,
+   "username": "stu45",
+   "pass": "d1f50a53f5d28588b74b9cdb53f1ae7b990e17c422c8c64a088ac492ec141536",
+   "real_name": "方高博",
+   "role": "student",
+   "class_id": 1,
+   "must_change": false,
+   "permissions": []
+  },
+  {
+   "id": 46,
+   "username": "stu46",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "殷俊逸",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  },
+  {
+   "id": 47,
+   "username": "stu47",
+   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "real_name": "张宇翔",
+   "role": "student",
+   "class_id": 1,
+   "must_change": true,
+   "permissions": []
+  }
+ ],
+ "records": [],
+ "feedback": [],
+ "seen_changelog": {
+  "stu45": true,
+  "stu33": true,
+  "admin": true
+ },
+ "updated_at": "2026-09-06T07:58:51.000Z",
+ "dictionary": {
+  "deduct": [
+   {
+    "name": "学习",
+    "items": [
+     "语文",
+     "数学",
+     "英语",
+     "物理",
+     "化学",
+     "技术",
+     "地理",
+     "历史",
+     "生物",
+     "政治"
+    ]
+   },
+   {
+    "name": "寝室",
+    "items": [
+     "地未拖",
+     "灯未关",
+     "垃圾未倒",
+     "地不干净",
+     "熄灯后聊天",
+     "床铺不整",
+     "物品摆放乱"
+    ]
+   },
+   {
+    "name": "日常",
+    "items": [
+     "迟到",
+     "卫生",
+     "纪律",
+     "其它"
+    ]
+   },
+   {
+    "name": "两操",
+    "items": [
+     "早操迟到",
+     "早操缺席",
+     "课间操违纪",
+     "眼保健操",
+     "跑操秩序"
+    ]
+   }
+  ],
+  "bonus": [
+   "助人为乐",
+   "学习进步",
+   "卫生优秀",
+   "纪律良好",
+   "比赛获奖",
+   "班级贡献",
+   "好人好事",
+   "其它加分"
+  ]
+ },
+ "audit": []
+}
