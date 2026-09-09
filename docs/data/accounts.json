@@ -519,6 +519,110 @@
    "must_change": true,
    "permissions": [],
    "gender": "男"
+  },
+  {
+   "id": 50,
+   "username": "数学老师",
+   "real_name": "数学老师",
+   "role": "teacher",
+   "class_id": 1,
+   "must_change": true,
+   "gender": null,
+   "permissions": [
+    "学习",
+    "加分"
+   ]
+  },
+  {
+   "id": 51,
+   "username": "物理老师",
+   "real_name": "物理老师",
+   "role": "teacher",
+   "class_id": 1,
+   "must_change": true,
+   "gender": null,
+   "permissions": [
+    "学习",
+    "加分"
+   ]
+  },
+  {
+   "id": 52,
+   "username": "化学老师",
+   "real_name": "化学老师",
+   "role": "teacher",
+   "class_id": 1,
+   "must_change": true,
+   "gender": null,
+   "permissions": [
+    "学习",
+    "加分"
+   ]
+  },
+  {
+   "id": 53,
+   "username": "技术老师",
+   "real_name": "技术老师",
+   "role": "teacher",
+   "class_id": 1,
+   "must_change": true,
+   "gender": null,
+   "permissions": [
+    "学习",
+    "加分"
+   ]
+  },
+  {
+   "id": 54,
+   "username": "地理老师",
+   "real_name": "地理老师",
+   "role": "teacher",
+   "class_id": 1,
+   "must_change": true,
+   "gender": null,
+   "permissions": [
+    "学习",
+    "加分"
+   ]
+  },
+  {
+   "id": 55,
+   "username": "历史老师",
+   "real_name": "历史老师",
+   "role": "teacher",
+   "class_id": 1,
+   "must_change": true,
+   "gender": null,
+   "permissions": [
+    "学习",
+    "加分"
+   ]
+  },
+  {
+   "id": 56,
+   "username": "生物老师",
+   "real_name": "生物老师",
+   "role": "teacher",
+   "class_id": 1,
+   "must_change": true,
+   "gender": null,
+   "permissions": [
+    "学习",
+    "加分"
+   ]
+  },
+  {
+   "id": 57,
+   "username": "政治老师",
+   "real_name": "政治老师",
+   "role": "teacher",
+   "class_id": 1,
+   "must_change": true,
+   "gender": null,
+   "permissions": [
+    "学习",
+    "加分"
+   ]
   }
  ],
  "seen_changelog": {},
@@ -526,7 +630,7 @@
   "version": "1.3.0",
   "semester_start": "2026-09-01",
   "changelog": [
-   "【v1.3.0 功能更新】新增学科老师账号（语文老师/英语老师）：可录入学习类扣分与加分、查看班级看板，首次登录需修改密码",
+   "【v1.3.0 功能更新】新增全部学科老师账号（语文/数学/英语/物理/化学/技术/地理/历史/生物/政治老师）：可录入学习类扣分与加分、查看班级看板，首次登录需修改密码",
    "【v1.3.0 功能更新】看板账号更名「看板」，可查看扣分明细，密码支持自助修改",
    "【v1.3.0 功能更新】扣分记录全面展示具体原因（含备注），无备注时显示「无备注」",
    "【v1.3.0 功能更新】所有扣分/加分类别新增「其它」项，选「其它」时须填写备注原因",
