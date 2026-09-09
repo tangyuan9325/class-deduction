@@ -12,7 +12,7 @@ function recordsOf(userId, range){
   return rs;
 }
 function sumScore(rs, cat){ const c = cat? rs.filter(r=>r.category===cat) : rs; return c.reduce((a,r)=>a+(r.score||0),0); }
-function byCategory(rs){ const o={}; (S.dictionary.deduct||[]).forEach(d=>o[d.name]=0); o['加分']=0; rs.forEach(r=>{ o[r.category]=(o[r.category]||0)+(r.score||0); }); return o; }
+function byCategory(rs){ const o={}; (DICT.deduct||[]).forEach(d=>o[d.name]=0); o['加分']=0; rs.forEach(r=>{ o[r.category]=(o[r.category]||0)+(r.score||0); }); return o; }
 function topStudents(rs, n, bonus){
   const map={};
   rs.forEach(r=>{ if(bonus ? r.score>0 : r.score<0){ map[r.user_name]=(map[r.user_name]||0)+(r.score||0); } });
@@ -233,11 +233,11 @@ function renderStudentSummary(main){
 function renderRecordCreate(main, isBonus){
   const canCats = isBonus ? ['加分'] : ALL_CATS.filter(c=>c!=='加分' && canEnter(me.role,c));
   if(!canCats.length){ main.innerHTML='<div class="empty">没有录入权限</div>'; return; }
-  const dict = isBonus ? (S.dictionary.bonus||[]) : (S.dictionary.deduct||[]).map(d=>({name:d.name, items:d.items}));
+  const dict = isBonus ? (DICT.bonus||[]) : (DICT.deduct||[]).map(d=>({name:d.name, items:d.items}));
   const defCat = canCats[0];
   const defItems = isBonus ? dict : (dict.find(d=>d.name===defCat)||{items:[]}).items;
   main.innerHTML = `
-  <div class="page-head"><div><div class="page-title">${isBonus?'录入加分':'录入扣分'}</div><div class="page-sub">${isBonus?'需「加分」权限':'勾选学生，按项目批量录入'}</div></div></div>
+  <div class="page-head"><div><div class="page-title">${isBonus?'录入加分':'录入扣分'}</div><div class="page-sub">${isBonus?'需「加分」权限':'勾选学生，按项目批量录入'} · 录入后点右下角「递交更新」统一提交</div></div></div>
   <div class="card">
     <div class="form-row">
       <div class="fld"><label>${isBonus?'加分项目':'类别'}</label>
@@ -248,12 +248,12 @@ function renderRecordCreate(main, isBonus){
       <div class="fld"><label>分值</label><input id="rcScore" type="number" value="${isBonus?'2':'1'}" min="1" max="50" style="width:110px"></div>
       <div class="fld"><label>记录日期</label><input id="rcDate" type="date" value="${todayStr()}"></div>
     </div>
-    <div class="fld"><label>原因/说明</label><input id="rcReason" placeholder="例如：作业未交 / 数学竞赛获奖"></div>
-    <div class="hint" style="margin:4px 0 10px">${isBonus?'加分填正数，将计入该生加分统计':'扣分填正数，系统按负数累计'}</div>
+    <div class="fld"><label>原因/备注</label><input id="rcReason" placeholder="例如：作业未交 / 数学竞赛获奖（选「其它」时必须填写）"></div>
+    <div class="hint" style="margin:4px 0 10px">${isBonus?'加分填正数，将计入该生加分统计':'扣分填正数，系统按负数累计'} · 选「其它」时须填写备注原因</div>
   </div>
   <div class="card">
     <div class="card-title" style="justify-content:space-between"><span>选择学生（已选 <span id="rcCount">0</span> 人）</span>
-      <span style="display:flex;gap:8px"><input id="rcSearch" placeholder="搜索姓名/学号" style="width:180px"><button class="btn" id="btnRcSubmit">提交</button></span></div>
+      <span style="display:flex;gap:8px"><input id="rcSearch" placeholder="搜索姓名/学号" style="width:180px"><button class="btn" id="btnRcSubmit">暂存录入</button></span></div>
     <div class="table-wrap"><table>
       <thead><tr><th style="width:40px"><input type="checkbox" id="rcAll"></th><th>学号</th><th>姓名</th><th>性别</th></tr></thead>
       <tbody id="rcBody"></tbody>
@@ -280,26 +280,25 @@ function renderRecordCreate(main, isBonus){
     rcItem.innerHTML = itemsOf().map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
     rcCat.onchange=()=>{ rcItem.innerHTML = itemsOf().map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join(''); };
   }
-  main.querySelector('#btnRcSubmit').onclick=async()=>{
+  main.querySelector('#btnRcSubmit').onclick=()=>{
     if(!selected.size){ toast('请先勾选学生', true); return; }
     const item = isBonus ? main.querySelector('#rcItem').value : rcItem.value;
     const score = parseInt(main.querySelector('#rcScore').value)||0;
     if(score<=0){ toast('分值必须为正数', true); return; }
     const reason = main.querySelector('#rcReason').value.trim();
+    if(item==='其它' && !reason){ toast('选择「其它」时必须填写备注原因', true); return; }
     const date = main.querySelector('#rcDate').value || todayStr();
     const cat = isBonus ? '加分' : rcCat.value;
-    isWriting=true; dirty=true;
-    try{
-      S.records = S.records || [];
-      for(const uid of selected){
-        const u=(S.users||[]).find(x=>x.id===uid);
-        S.records.push({id:Date.now()+Math.floor(Math.random()*999), user_id:uid, user_name:u?u.real_name:'#'+uid, category:cat, subject_or_item:item, score:cat==='加分'?score:-score, reason, record_date:date, created_at:new Date().toISOString(), revoked:false});
-      }
-      await save(isBonus?'录入加分':'录入扣分', selected.size+'人');
-      toast(`已为 ${selected.size} 名学生录入${isBonus?'加分':'扣分'} ✓`);
-      renderAll();
-    }catch(e){ toast('提交失败：'+e.message, true); }
-    finally{ isWriting=false; dirty=false; }
+    const newRecords = [];
+    for(const uid of selected){
+      const u=(S.users||[]).find(x=>x.id===uid);
+      newRecords.push({id:Date.now()+Math.floor(Math.random()*999)+uid, user_id:uid, user_name:u?u.real_name:'#'+uid, category:cat, subject_or_item:item, score:cat==='加分'?score:-score, reason, record_date:date, created_at:new Date().toISOString(), revoked:false});
+    }
+    S.records = S.records || [];
+    newRecords.forEach(r=>S.records.push(r));
+    stageRecordsAdd(newRecords);
+    toast(`已暂存 ${selected.size} 名学生${isBonus?'加分':'扣分'}，点右下角「递交更新」提交 ✓`);
+    renderRecordCreate(main, isBonus);
   };
 }
 
@@ -325,14 +324,14 @@ function renderRecords(main){
       <span class="hint">共 ${total} 条</span>
     </div>
     <div class="card" style="padding:0"><div class="table-wrap"><table>
-      <thead><tr><th>日期</th><th>学生</th><th>类别</th><th>项目</th><th>分值</th><th>原因</th><th>记录人</th><th>操作</th></tr></thead>
+      <thead><tr><th>日期</th><th>学生</th><th>类别</th><th>项目</th><th>分值</th><th>原因/备注</th><th>记录人</th><th>操作</th></tr></thead>
       <tbody>${rows.length? rows.map(r=>`
         <tr><td>${fmtDate(r.record_date)}</td><td>${esc(r.user_name)}</td>
         <td><span class="tag ${r.category==='加分'?'green':'blue'}">${esc(r.category)}</span></td>
         <td>${esc(r.subject_or_item)}</td>
         <td style="color:${r.score>0?'var(--green)':'var(--red)'};font-weight:600">${r.score>0?'+':''}${r.score}</td>
-        <td>${esc(r.reason||'')}</td><td>${esc(r.created_by||'')}</td>
-        <td><button class="btn mini danger" data-revoke="${r.id}">撤销</button></td></tr>`).join('') : '<tr><td colspan="8"><div class="empty">暂无记录</div></td></tr>'}</tbody>
+        <td style="max-width:260px">${r.reason? esc(r.reason) : '<span class="hint">无备注</span>'}</td><td>${esc(r.created_by||'')}</td>
+        <td>${canRevoke()? `<button class="btn mini danger" data-revoke="${r.id}">撤销</button>`:''}</td></tr>`).join('') : '<tr><td colspan="8"><div class="empty">暂无记录</div></td></tr>'}</tbody>
     </table></div>
     <div class="pager">
       <button class="btn mini ghost" id="pgPrev" ${page<=1?'disabled':''}>上一页</button>
@@ -341,10 +340,10 @@ function renderRecords(main){
     </div></div>`;
     main.querySelectorAll('[data-revoke]').forEach(b=>b.onclick=async()=>{
       const id=+b.dataset.revoke;
-      const y=await askConfirm('确认撤销这条记录？');
+      const y=await askConfirm('确认撤销这条记录？撤销后仍可在汇总中排除，操作需「递交更新」生效。');
       if(!y) return;
       const r=(S.records||[]).find(x=>x.id===id);
-      if(r){ r.revoked=true; await save('撤销记录', r.id); toast('已撤销 ✓'); draw(); renderAll(); }
+      if(r){ r.revoked=true; stageRecordsRevoke(id); toast('已暂存撤销，点「递交更新」生效 ✓'); draw(); updatePendingUI(); }
     });
     main.querySelector('#flCat').onchange=e=>{ cat=e.target.value; page=1; draw(); };
     main.querySelector('#flGo').onclick=()=>{ kw=main.querySelector('#flKw').value.trim(); page=1; draw(); };
@@ -352,8 +351,8 @@ function renderRecords(main){
     main.querySelector('#pgPrev').onclick=()=>{ if(page>1){page--; draw();} };
     main.querySelector('#pgNext').onclick=()=>{ if(page*size<total){page++; draw();} };
     main.querySelector('#btnExp').onclick=()=>{
-      const lines=[['日期','学生','类别','项目','分值','原因'].join(',')];
-      rs.forEach(r=>lines.push([csvSafe(fmtDate(r.record_date)),csvSafe(r.user_name),csvSafe(r.category),csvSafe(r.subject_or_item),r.score,csvSafe(r.reason||'')].join(',')));
+      const lines=[['日期','学生','类别','项目','分值','原因/备注'].join(',')];
+      rs.forEach(r=>lines.push([csvSafe(fmtDate(r.record_date)),csvSafe(r.user_name),csvSafe(r.category),csvSafe(r.subject_or_item),r.score,csvSafe(r.reason||'无备注')].join(',')));
       const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
       const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='扣分记录_'+todayStr()+'.csv'; a.click();
     };
@@ -377,8 +376,8 @@ function renderPersonal(main){
     <div class="stat"><div class="lbl">记录数</div><div class="val blue">${rs.length}</div></div>
   </div>
   <div class="card" style="padding:0"><div class="table-wrap"><table>
-    <thead><tr><th>日期</th><th>类别</th><th>项目</th><th>分值</th><th>原因</th></tr></thead>
-    <tbody>${rs.length? rs.map(r=>`<tr><td>${fmtDate(r.record_date)}</td><td><span class="tag ${r.category==='加分'?'green':'blue'}">${esc(r.category)}</span></td><td>${esc(r.subject_or_item)}</td><td style="color:${r.score>0?'var(--green)':'var(--red)'}">${r.score>0?'+':''}${r.score}</td><td>${esc(r.reason||'')}</td></tr>`).join('') : '<tr><td colspan="5"><div class="empty">暂无个人记录</div></td></tr>'}</tbody>
+    <thead><tr><th>日期</th><th>类别</th><th>项目</th><th>分值</th><th>原因/备注</th></tr></thead>
+    <tbody>${rs.length? rs.map(r=>`<tr><td>${fmtDate(r.record_date)}</td><td><span class="tag ${r.category==='加分'?'green':'blue'}">${esc(r.category)}</span></td><td>${esc(r.subject_or_item)}</td><td style="color:${r.score>0?'var(--green)':'var(--red)'}">${r.score>0?'+':''}${r.score}</td><td>${r.reason? esc(r.reason) : '<span class="hint">无备注</span>'}</td></tr>`).join('') : '<tr><td colspan="5"><div class="empty">暂无个人记录</div></td></tr>'}</tbody>
   </table></div></div>`;
 }
 
@@ -389,17 +388,23 @@ function renderUsers(main){
   if(!canManageUsers()){ main.innerHTML='<div class="empty">无权限</div>'; return; }
   const students=studentsList();
   main.innerHTML = `
-  <div class="page-head"><div><div class="page-title">用户管理</div><div class="page-sub">创建账号 · 分配权限 · 重置密码</div></div>
+  <div class="page-head"><div><div class="page-title">用户管理</div><div class="page-sub">创建账号 · 分配权限 · 重置密码（修改后点「递交更新」生效）</div></div>
     <button class="btn" id="btnAddUser">+ 新建学生</button></div>
   <div class="card" style="padding:0"><div class="table-wrap"><table>
-    <thead><tr><th>账号</th><th>姓名</th><th>角色</th><th>录入权限</th><th>操作</th></tr></thead>
+    <thead><tr><th>账号</th><th>姓名</th><th>性别</th><th>角色</th><th>录入权限</th><th>操作</th></tr></thead>
     <tbody>
       ${(S.users||[]).map(u=>{
         const p=u.permissions||[];
+        const permText = u.role==='student' ? (p.length? p.join('、') : '<span class="hint">无</span>')
+          : (u.role==='teacher' ? (p.length? p.join('、') : '全部') : (p.length? p.join('、') : '<span class="hint">只读</span>'));
+        const ops = (u.role==='student'||u.role==='teacher'||u.role==='viewer')
+          ? `${u.role!=='viewer'? `<button class="btn mini" data-perm="${u.id}">权限</button> `:''}<button class="btn mini ghost" data-reset="${u.id}">重置密码</button>${u.role==='student'? ` <button class="btn mini danger" data-del="${u.id}">删除</button>`:''}`
+          : '';
         return `<tr><td>${esc(u.username)}</td><td>${esc(u.real_name)}</td>
+        <td>${u.role==='student'? `<span class="tag ${u.gender==='女'?'purple':'blue'}">${esc(u.gender||'男')}</span>`:'—'}</td>
         <td><span class="tag ${u.role==='admin'?'red':u.role==='teacher'?'yellow':u.role==='viewer'?'blue':'green'}">${roleText(u.role)}</span></td>
-        <td style="font-size:12px">${u.role==='student' ? (p.length? p.join('、') : '<span class="hint">无</span>') : '全部'}</td>
-        <td>${u.role==='student'? `<button class="btn mini" data-perm="${u.id}">权限</button> <button class="btn mini ghost" data-reset="${u.id}">重置密码</button> <button class="btn mini danger" data-del="${u.id}">删除</button>` : ''}</td></tr>`;
+        <td style="font-size:12px">${permText}</td>
+        <td>${ops}</td></tr>`;
       }).join('')}
     </tbody>
   </table></div></div>`;
@@ -411,9 +416,12 @@ function renderUsers(main){
     if(!auth) return;
     const y=await askConfirm(`将「${u.real_name}」的密码重置为 123456？`);
     if(!y) return;
-    u.pass = await makePwdRecord('123456');
-    u.must_change = u.role==='student';
-    await save('重置密码', u.username); toast('已重置为初始密码 ✓'); renderUsers(main);
+    const np = await makePwdRecord('123456');
+    if(me.username===u.username){ S.pwdCache[u.username]=np; }
+    u.must_change = u.role==='student'||u.role==='teacher';
+    stageAccountPwd(u.username, np);
+    stageAccountUpsert(u);
+    toast('已暂存重置密码，点「递交更新」生效 ✓');
   });
   main.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
     const u=(S.users||[]).find(x=>x.id===+b.dataset.del);
@@ -422,7 +430,9 @@ function renderUsers(main){
     const y=await askConfirm(`删除学生「${u.real_name}」？其记录将保留。`);
     if(!y) return;
     S.users = S.users.filter(x=>x.id!==u.id);
-    await save('删除用户', u.username); toast('已删除'); renderUsers(main);
+    stageAccountDelete(u.username);
+    toast('已暂存删除，点「递交更新」生效 ✓');
+    renderUsers(main);
   });
 }
 function openUserDialog(existing, students, main){
@@ -430,7 +440,7 @@ function openUserDialog(existing, students, main){
   d.innerHTML=`<div class="dialog"><h3>${existing?'编辑学生':'新建学生'}</h3>
     <div class="fld"><label>姓名</label><input id="udName" value="${existing?esc(existing.real_name):''}"></div>
     <div class="fld"><label>学号（登录账号为 stu+学号）</label><input id="udNo" value="${existing?esc(existing.username.replace('stu','')):''}" ${existing?'disabled':''}></div>
-    <div class="dlg-btns"><button class="btn ghost" id="udCancel">取消</button><button class="btn" id="udOk">保存</button></div></div>`;
+    <div class="dlg-btns"><button class="btn ghost" id="udCancel">取消</button><button class="btn" id="udOk">暂存</button></div></div>`;
   document.body.appendChild(d);
   const close=()=>d.remove();
   d.querySelector('#udCancel').onclick=close;
@@ -442,24 +452,32 @@ function openUserDialog(existing, students, main){
     if(existing){
       const auth=await requirePass(); if(!auth) return;
       existing.real_name=name;
+      stageAccountUpsert(existing);
     }else{
       if((S.users||[]).some(u=>u.username===uname)){ toast('该学号已存在', true); return; }
       const auth=await requirePass(); if(!auth) return;
       const maxId=Math.max(0, ...(S.users||[]).map(u=>u.id));
-      S.users.push({id:maxId+1, username:uname, pass:await makePwdRecord('123456'), real_name:name, role:'student', class_id:1, must_change:true, gender:null, permissions:[]});
+      const nu={id:maxId+1, username:uname, real_name:name, role:'student', class_id:1, must_change:true, gender:null, permissions:[]};
+      const np = await makePwdRecord('123456');
+      S.users.push(nu);
+      S.pwdCache[uname]=np;
+      stageAccountUpsert(nu);
+      stageAccountPwd(uname, np);
     }
-    await save(existing?'编辑学生':'新建学生', uname); toast('已保存 ✓'); close(); renderUsers(main);
+    toast('已暂存'+(existing?'编辑':'新建')+'，点「递交更新」生效 ✓'); close(); renderUsers(main);
   };
 }
 function openPermDialog(uid, main){
   const u=(S.users||[]).find(x=>x.id===uid);
+  if(!u || u.role==='admin') return;
   const cur=new Set(u.permissions||[]);
   const opts=['学习','寝室','日常','两操','加分','查看班级','查看扣分记录'];
+  const isTeacher = u.role==='teacher';
   const d=document.createElement('div'); d.className='mask'; d.id='permDlg';
   d.innerHTML=`<div class="dialog"><h3>分配权限 · ${esc(u.real_name)}</h3>
     <div class="perm-box" id="permBox">${opts.map(o=>`<span class="perm-pill ${cur.has(o)?'on':''}" data-o="${esc(o)}">${esc(o)}</span>`).join('')}</div>
-    <div class="hint" style="margin-top:10px">「加分」是 1.1.0 新增的独立权限；勾选「查看班级」可看班级看板/小结/汇总；勾选「查看扣分记录」可看全量扣分明细。</div>
-    <div class="dlg-btns"><button class="btn ghost" id="pdCancel">取消</button><button class="btn" id="pdOk">保存</button></div></div>`;
+    <div class="hint" style="margin-top:10px">${isTeacher?'老师未勾选任何类别时默认拥有全部扣分/加分权限；勾选「学习」等类别则仅限该类目。':'「加分」是独立权限；勾选「查看班级」可看班级看板/小结/汇总；勾选「查看扣分记录」可看全量扣分明细。'}</div>
+    <div class="dlg-btns"><button class="btn ghost" id="pdCancel">取消</button><button class="btn" id="pdOk">暂存</button></div></div>`;
   document.body.appendChild(d);
   d.querySelectorAll('.perm-pill').forEach(p=>p.onclick=()=>{ const o=p.dataset.o; if(cur.has(o)) cur.delete(o); else cur.add(o); p.classList.toggle('on'); });
   const close=()=>d.remove();
@@ -468,7 +486,8 @@ function openPermDialog(uid, main){
     const auth=await requirePass(); if(!auth) return;
     u.permissions=[...cur];
     if(uid===me.id) me.permissions=u.permissions;
-    await save('修改权限', u.username); toast('权限已保存 ✓'); close(); renderUsers(main);
+    stageAccountUpsert(u);
+    toast('已暂存权限修改，点「递交更新」生效 ✓'); close(); renderUsers(main);
   };
 }
 
@@ -501,12 +520,24 @@ function renderFeedback(main){
     if(!content){ toast('请输入反馈内容', true); return; }
     S.feedback=S.feedback||[];
     S.feedback.push({id:Date.now()+Math.floor(Math.random()*999), user_id:me.id, user_name:me.real_name||me.username, user_role:me.role, content, contact:main.querySelector('#fbContact').value.trim(), status:'open', github_issue_num:0, created_at:new Date().toISOString()});
-    await save('提交反馈', me.username); toast('反馈提交成功，感谢你的建议！ ✓'); renderFeedback(main);
+    try{
+      await writeDomain('feedback');
+      S.audit = dedupAudit([...(S.audit||[]), {t:nowISO(), u:me.username, a:'提交反馈', d:me.username}]).slice(-500);
+      toast('反馈提交成功，感谢你的建议！ ✓');
+    }catch(e){ toast('提交失败：'+e.message, true); }
+    renderFeedback(main);
   };
   if(admin){
     main.querySelectorAll('[data-fb]').forEach(b=>b.onclick=async()=>{
       const f=(S.feedback||[]).find(x=>x.id===+b.dataset.fb);
-      if(f){ f.status=b.dataset.st; await save('处理反馈', f.id); toast('状态已更新 ✓'); renderFeedback(main); }
+      if(f){
+        f.status=b.dataset.st;
+        try{
+          await writeDomain('feedback');
+          toast('状态已更新 ✓');
+        }catch(e){ toast('更新失败：'+e.message, true); }
+        renderFeedback(main);
+      }
     });
   }
 }
@@ -522,11 +553,13 @@ function renderAbout(main){
     <div class="code-line"><code>${cloneCmd}</code><button class="btn mini" id="btnCopy">复制命令</button></div>
     <div class="hint">克隆后进入目录：<code style="color:var(--accent)">go build -o class-deduction ./cmd &amp;&amp; ./class-deduction</code>，浏览器访问 <code style="color:var(--accent)">http://localhost:8080</code></div>
   </div>
-  <div class="card"><div class="card-title">v1.2.0 更新日志</div>
+  <div class="card"><div class="card-title">v1.3.0 更新日志</div>
     <ul class="notes">${(S.meta.changelog||[]).map(c=>`<li>${esc(c)}</li>`).join('')}</ul>
   </div>
   <div class="card"><div class="card-title">关于数据存储</div>
-    <div class="hint" style="line-height:1.9">本在线版采用「GitHub 仓库即数据库」方案：所有数据保存在本仓库 <code>docs/data/db.json</code>，通过 GitHub API + Token 读写实现跨设备持久化；多端 8s/30s 自适应轮询（ETag 优化配额）实现实时同步。源码中的 Go 后端（Gin+GORM+SQLite）仍保留，供本机/自建服务器使用，功能完全一致。</div>
+    <div class="hint" style="line-height:1.9">本在线版采用「GitHub 仓库即数据库」方案（v1.3.0 起数据库拆分多文件）：
+    <code>docs/data/accounts.json</code>（账号控制库）· <code>docs/data/records.json</code>（扣分/加分记录库+审计）· <code>docs/data/feedback.json</code>（意见反馈库）· <code>docs/data/users/&lt;账号&gt;/pwd.json</code>（每用户独立密码文件）。
+    通过 GitHub API + Token 读写实现跨设备持久化；实时同步采用 Pages CDN + raw 源站双通道轮询（不消耗 API 配额）。源码中的 Go 后端（Gin+GORM+SQLite）仍保留，供本机/自建服务器使用，功能完全一致。</div>
   </div>`;
   main.querySelector('#btnCopy').onclick=async()=>{
     try{ await navigator.clipboard.writeText(cloneCmd); toast('克隆命令已复制 ✓'); }catch(e){ toast('复制失败，请手动选择复制', true); }
@@ -534,7 +567,7 @@ function renderAbout(main){
 }
 
 // ============================================================
-// 修改密码弹窗
+// 修改密码弹窗（v1.3.0：自助改密走「暂存-递交」，force 模式立即递交）
 // ============================================================
 function openChangePass(force){
   const d=document.createElement('div'); d.className='mask'; d.id='cpDlg';
@@ -542,38 +575,38 @@ function openChangePass(force){
     <div class="fld"><label>当前密码</label><input id="cpOld" type="password"></div>
     <div class="fld"><label>新密码</label><input id="cpNew" type="password"></div>
     <div class="fld"><label>确认新密码</label><input id="cpNew2" type="password"></div>
-    <div class="dlg-btns"><button class="btn ghost" id="cpCancel">${force?'取消（暂不修改）':'取消'}</button><button class="btn" id="cpOk">保存</button></div></div>`;
+    <div class="dlg-btns"><button class="btn ghost" id="cpCancel">${force?'取消（暂不修改）':'取消'}</button><button class="btn" id="cpOk">${force?'保存并立即生效':'暂存修改'}</button></div></div>`;
   document.body.appendChild(d);
   const close=()=>d.remove();
   d.querySelector('#cpCancel').onclick=close;
   d.querySelector('#cpOk').onclick=async()=>{
     const u=(S.users||[]).find(x=>x.id===me.id);
-    const v=await verifyPwd(d.querySelector('#cpOld').value, u.pass);
+    const stored = S.pwdCache[me.username] || await loadPwd(me.username);
+    const v=await verifyPwd(d.querySelector('#cpOld').value, stored);
     if(!v.ok){ toast('当前密码错误', true); return; }
     const n1=d.querySelector('#cpNew').value, n2=d.querySelector('#cpNew2').value;
     if(n1.length<6){ toast('新密码至少 6 位', true); return; }
     if(n1!==n2){ toast('两次输入不一致', true); return; }
-    u.pass=await makePwdRecord(n1);
-    u.must_change=false;
-    await save('修改密码', me.username); toast('密码已修改 ✓'); close();
+    const np=await makePwdRecord(n1);
+    S.pwdCache[me.username]=np;
+    if(u) u.must_change=false;
+    if(force){
+      // 首次改密立即生效（不阻塞使用）
+      try{
+        await writePwdFile(me.username, np);
+        await writeDomain('accounts');
+        S.audit = dedupAudit([...(S.audit||[]), {t:nowISO(), u:me.username, a:'修改密码', d:me.username}]).slice(-500);
+        toast('密码已修改并生效 ✓');
+      }catch(e){ toast('保存失败：'+e.message, true); }
+    }else{
+      stageSelfPwd(np);
+      if(u) stageAccountUpsert(u);
+      toast('已暂存修改密码，点「递交更新」生效 ✓');
+    }
+    close();
   };
 }
 
 // ============================================================
-// 启动
+// 启动（由 app.js 的 boot 负责：加载数据 → 恢复会话 → 轮询）
 // ============================================================
-(async function boot(){
-  bindEvents();
-  let ok=false;
-  try{ const {state}=await getStateAPI(); applyState(state); ok=true; }catch(e){}
-  if(!ok){ try{ const st=await fetchRawState(); if(st && st.version){ applyState(st); ok=true; } }catch(e){} }
-  if(!ok){ // 首次无数据：用内置种子
-    const seedRes=await fetch('data/db.json',{cache:'no-store'}).catch(()=>null);
-    if(seedRes && seedRes.ok){ const st=await seedRes.json(); applyState(st); ok=true; }
-  }
-  if(!ok){
-    applyState({version:DB_VERSION, meta:{version:APP_VERSION, semester_start:'2026-09-01', changelog:[]}, users:[], records:[], feedback:[], audit:[], seen_changelog:{}, updated_at:new Date().toISOString()});
-  }
-  restoreSession();
-  startPolling();
-})();
