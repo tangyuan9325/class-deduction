@@ -1,0 +1,69 @@
+name: Fetch VPS Database
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch-db:
+    name: Pull class.db from deploy server
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Probe server data dir & pull database
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USERNAME }}
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          PASS: ${{ secrets.DEPLOY_PASSWORD }}
+          PORT: ${{ secrets.DEPLOY_PORT }}
+          PATH_OVERRIDE: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set -e
+          echo "$KEY" > /tmp/ssh_key
+          chmod 600 /tmp/ssh_key
+          (command -v sshpass >/dev/null || sudo apt-get update -qq && sudo apt-get install -y -qq sshpass) >/dev/null 2>&1 || true
+          PORT="${PORT:-22}"
+          if [ -n "$PASS" ] && [ "$PASS" != "null" ]; then
+            SSHRUN() { sshpass -p "$PASS" ssh -p "$PORT" -o StrictHostKeyChecking=no -o ConnectTimeout=15 "$USER@$HOST" "$@"; }
+          else
+            SSHRUN() { ssh -i /tmp/ssh_key -p "$PORT" -o StrictHostKeyChecking=no -o ConnectTimeout=15 "$USER@$HOST" "$@"; }
+          fi
+          APP_DIR="${PATH_OVERRIDE:-/opt/class-deduction}"
+          echo "== probing $APP_DIR/data =="
+          SSHRUN "ls -la '$APP_DIR/data' 2>/dev/null || echo NO_DATA_DIR; echo ---; ls -la '$APP_DIR' 2>/dev/null | head -20 || echo NO_APP_DIR"
+          echo "== pulling db (base64) =="
+          SSHRUN "cd '$APP_DIR/data' 2>/dev/null && base64 -w0 class.db 2>/dev/null || echo NO_DB_FILE" > /tmp/db.b64
+          head -c 40 /tmp/db.b64
+          echo
+          if grep -q NO_DB_FILE /tmp/db.b64; then
+            echo "DB_NOT_FOUND_ON_SERVER"
+            exit 0
+          fi
+          mkdir -p docs/data/backup
+          base64 -d /tmp/db.b64 > docs/data/backup/vps.class.db
+          ls -la docs/data/backup/vps.class.db
+          python3 -c "
+import sqlite3, json
+c = sqlite3.connect('docs/data/backup/vps.class.db')
+c.row_factory = sqlite3.Row
+print('== tables ==')
+for t in [r[0] for r in c.execute(\"SELECT name FROM sqlite_master WHERE type='table'\").fetchall()]:
+    try: print(t, c.execute(f'SELECT COUNT(*) FROM {t}').fetchone()[0])
+    except: pass
+print('== records ==')
+for r in c.execute('SELECT * FROM deduction_records'):
+    print(json.dumps(dict(r), ensure_ascii=False, default=str))
+"
+
+      - name: Commit database snapshot
+        if: hashFiles('docs/data/backup/vps.class.db') != ''
+        run: |
+          git config user.name "tangyuan9325"
+          git config user.email "tangyuan9325@users.noreply.github.com"
+          git add docs/data/backup/vps.class.db
+          git commit -m "db: VPS服务器数据库快照(供恢复旧扣分记录)" --quiet || echo "no change"
+          git push --quiet || echo "push skipped"
