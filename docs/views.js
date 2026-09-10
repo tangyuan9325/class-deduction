@@ -292,7 +292,7 @@ function renderRecordCreate(main, isBonus){
     const newRecords = [];
     for(const uid of selected){
       const u=(S.users||[]).find(x=>x.id===uid);
-      newRecords.push({id:Date.now()+Math.floor(Math.random()*999)+uid, user_id:uid, user_name:u?u.real_name:'#'+uid, category:cat, subject_or_item:item, score:cat==='加分'?score:-score, reason, record_date:date, created_at:new Date().toISOString(), revoked:false});
+      newRecords.push({id:Date.now()+Math.floor(Math.random()*999)+uid, user_id:uid, user_name:u?u.real_name:'#'+uid, category:cat, subject_or_item:item, score:cat==='加分'?score:-score, reason, record_date:date, created_at:new Date().toISOString(), revoked:false, created_by:me?me.username:''});
     }
     S.records = S.records || [];
     newRecords.forEach(r=>S.records.push(r));
@@ -330,7 +330,7 @@ function renderRecords(main){
         <td><span class="tag ${r.category==='加分'?'green':'blue'}">${esc(r.category)}</span></td>
         <td>${esc(r.subject_or_item)}</td>
         <td style="color:${r.score>0?'var(--green)':'var(--red)'};font-weight:600">${r.score>0?'+':''}${r.score}</td>
-        <td style="max-width:260px">${r.reason? esc(r.reason) : '<span class="hint">无备注</span>'}</td><td>${esc(r.created_by||'')}</td>
+        <td style="max-width:260px">${r.reason? esc(r.reason) : '<span class="hint">无备注</span>'}</td><td>${esc(r.created_by||'—')}</td>
         <td>${canRevoke()? `<button class="btn mini danger" data-revoke="${r.id}">撤销</button>`:''}</td></tr>`).join('') : '<tr><td colspan="8"><div class="empty">暂无记录</div></td></tr>'}</tbody>
     </table></div>
     <div class="pager">
