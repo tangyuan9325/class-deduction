@@ -48,18 +48,7 @@ jobs:
           mkdir -p docs/data/backup
           base64 -d /tmp/db.b64 > docs/data/backup/vps.class.db
           ls -la docs/data/backup/vps.class.db
-          python3 -c "
-import sqlite3, json
-c = sqlite3.connect('docs/data/backup/vps.class.db')
-c.row_factory = sqlite3.Row
-print('== tables ==')
-for t in [r[0] for r in c.execute(\"SELECT name FROM sqlite_master WHERE type='table'\").fetchall()]:
-    try: print(t, c.execute(f'SELECT COUNT(*) FROM {t}').fetchone()[0])
-    except: pass
-print('== records ==')
-for r in c.execute('SELECT * FROM deduction_records'):
-    print(json.dumps(dict(r), ensure_ascii=False, default=str))
-"
+          python3 -c "import sqlite3,json; c=sqlite3.connect('docs/data/backup/vps.class.db'); print('tables:', [r[0] for r in c.execute(\"SELECT name FROM sqlite_master WHERE type='table'\")]); print('records:'); [print(json.dumps(dict(zip([d[0] for d in c.description], r)), ensure_ascii=False, default=str)) for r in c.execute('SELECT * FROM deduction_records')]"
 
       - name: Commit database snapshot
         if: hashFiles('docs/data/backup/vps.class.db') != ''
