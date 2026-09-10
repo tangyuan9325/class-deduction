@@ -1,6 +1,1 @@
-{
- "version": 5,
- "t": "2026-09-09T14:28:06.000Z",
- "records": [],
- "audit": []
-}
+{"version":5,"t":"2026-09-10T09:46:53.685Z","records":[{"id":1789033565833,"user_id":17,"user_name":"黄渝翔","category":"寝室","subject_or_item":"其它","score":-1,"reason":"洗脸台","record_date":"2026-09-10","created_at":"2026-09-10T09:46:05.546Z","revoked":false},{"id":1789033588617,"user_id":17,"user_name":"黄渝翔","category":"寝室","subject_or_item":"熄灯后聊天","score":-1,"reason":"","record_date":"2026-09-10","created_at":"2026-09-10T09:46:28.511Z","revoked":false},{"id":1789033589199,"user_id":19,"user_name":"李成圆","category":"寝室","subject_or_item":"熄灯后聊天","score":-1,"reason":"","record_date":"2026-09-10","created_at":"2026-09-10T09:46:28.512Z","revoked":false},{"id":1789033589346,"user_id":21,"user_name":"厉益和","category":"寝室","subject_or_item":"熄灯后聊天","score":-1,"reason":"","record_date":"2026-09-10","created_at":"2026-09-10T09:46:28.512Z","revoked":false}],"audit":[{"t":"2026-09-10T09:46:30.528Z","u":"stu38","a":"录入扣分","d":"黄渝翔 其它"},{"t":"2026-09-10T09:46:36.185Z","u":"stu38","a":"录入扣分","d":"黄渝翔 其它"},{"t":"2026-09-10T09:46:40.276Z","u":"stu38","a":"录入扣分","d":"黄渝翔 其它"},{"t":"2026-09-10T09:46:46.137Z","u":"stu38","a":"录入扣分","d":"黄渝翔 其它"},{"t":"2026-09-10T09:46:53.685Z","u":"stu38","a":"录入扣分","d":"黄渝翔 其它"}]}
