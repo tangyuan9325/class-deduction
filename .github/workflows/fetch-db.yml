@@ -1,8 +1,7 @@
 name: Fetch VPS Database
 
+# 仅手动触发：需先配置 DEPLOY_HOST/DEPLOY_USERNAME/DEPLOY_SSH_KEY/DEPLOY_PASSWORD/DEPLOY_PORT/DEPLOY_PATH
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
