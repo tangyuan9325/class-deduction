@@ -1,6 +1,8 @@
 name: Fetch VPS Database
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -65,5 +67,5 @@ for r in c.execute('SELECT * FROM deduction_records'):
           git config user.name "tangyuan9325"
           git config user.email "tangyuan9325@users.noreply.github.com"
           git add docs/data/backup/vps.class.db
-          git commit -m "db: VPS服务器数据库快照(供恢复旧扣分记录)" --quiet || echo "no change"
+          git commit -m "db: VPS服务器数据库快照(供恢复旧扣分记录) [skip ci]" --quiet || echo "no change"
           git push --quiet || echo "push skipped"
