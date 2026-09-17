@@ -1,6 +1,6 @@
 {
   "version": 5,
-  "t": "2026-09-16T14:18:10.000Z",
+  "t": "2026-09-17T11:29:06.000Z",
   "records": [
     {
       "id": 1789033565833,
@@ -1951,6 +1951,123 @@
       "created_at": "2026-09-16T14:18:10.000Z",
       "revoked": false,
       "created_by": "stu38"
+    },
+    {
+      "id": 1789187531318,
+      "user_id": 17,
+      "user_name": "黄渝翔",
+      "category": "学习",
+      "subject_or_item": "英语",
+      "score": -2,
+      "reason": "英语作业未交",
+      "record_date": "2026-09-17",
+      "created_at": "2026-09-17T11:29:06.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1789187531319,
+      "user_id": 34,
+      "user_name": "严佳辉",
+      "category": "加分",
+      "subject_or_item": "其他",
+      "score": 2,
+      "reason": "规划生日会",
+      "record_date": "2026-09-17",
+      "created_at": "2026-09-17T11:29:06.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1789187531320,
+      "user_id": 26,
+      "user_name": "施浩哲",
+      "category": "加分",
+      "subject_or_item": "其他",
+      "score": 2,
+      "reason": "规划生日会",
+      "record_date": "2026-09-17",
+      "created_at": "2026-09-17T11:29:06.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1789187531321,
+      "user_id": 33,
+      "user_name": "徐绅源",
+      "category": "加分",
+      "subject_or_item": "其他",
+      "score": 2,
+      "reason": "规划生日会",
+      "record_date": "2026-09-17",
+      "created_at": "2026-09-17T11:29:06.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1789187531322,
+      "user_id": 38,
+      "user_name": "赵潼鑫",
+      "category": "加分",
+      "subject_or_item": "其他",
+      "score": 2,
+      "reason": "规划生日会",
+      "record_date": "2026-09-17",
+      "created_at": "2026-09-17T11:29:06.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1789187531323,
+      "user_id": 4,
+      "user_name": "葛姝玲",
+      "category": "日常",
+      "subject_or_item": "其它",
+      "score": -6,
+      "reason": "三天未扫地",
+      "record_date": "2026-09-17",
+      "created_at": "2026-09-17T11:29:06.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1789187531324,
+      "user_id": 7,
+      "user_name": "吴孜阳",
+      "category": "日常",
+      "subject_or_item": "其它",
+      "score": -6,
+      "reason": "三天未扫地",
+      "record_date": "2026-09-17",
+      "created_at": "2026-09-17T11:29:06.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1789187531325,
+      "user_id": 41,
+      "user_name": "朱彦奇",
+      "category": "日常",
+      "subject_or_item": "其它",
+      "score": -2,
+      "reason": "未拖地",
+      "record_date": "2026-09-17",
+      "created_at": "2026-09-17T11:29:06.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1789187531326,
+      "user_id": 26,
+      "user_name": "施浩哲",
+      "category": "日常",
+      "subject_or_item": "其它",
+      "score": 1,
+      "reason": "帮助同学扔垃圾",
+      "record_date": "2026-09-17",
+      "created_at": "2026-09-17T11:29:06.000Z",
+      "revoked": false,
+      "created_by": "stu38"
     }
   ],
   "audit": [
@@ -2079,6 +2196,12 @@
       "u": "stu38",
       "a": "批量录入",
       "d": "9/15(语文3+化学15+寝室3=21条)+9/16(化学12+加分7+扣分2=21条),共42条"
+    },
+    {
+      "t": "2026-09-17T11:29:06.000Z",
+      "u": "stu38",
+      "a": "批量录入",
+      "d": "9/17:英语未交1+生日会加分4+卫生扣分3+卫生加分1=9条"
     }
   ]
 }
