@@ -1,6 +1,6 @@
 {
   "version": 5,
-  "t": "2026-10-05T09:50:10.000Z",
+  "t": "2026-10-07T09:15:36.000Z",
   "records": [
     {
       "id": 1789033565833,
@@ -2471,6 +2471,214 @@
       "created_at": "2026-10-05T09:50:10.000Z",
       "revoked": false,
       "created_by": "stu38"
+    },
+    {
+      "id": 1791115207787,
+      "user_id": 11,
+      "user_name": "陈若铭",
+      "category": "学习",
+      "subject_or_item": "化学",
+      "score": -2,
+      "reason": "化学作业未交",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207788,
+      "user_id": 13,
+      "user_name": "翟振滔",
+      "category": "学习",
+      "subject_or_item": "化学",
+      "score": -2,
+      "reason": "化学作业未交",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207789,
+      "user_id": 15,
+      "user_name": "胡博文",
+      "category": "学习",
+      "subject_or_item": "化学",
+      "score": -2,
+      "reason": "化学作业未交",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207790,
+      "user_id": 16,
+      "user_name": "胡哲源",
+      "category": "学习",
+      "subject_or_item": "化学",
+      "score": -2,
+      "reason": "化学作业未交",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207791,
+      "user_id": 17,
+      "user_name": "黄渝翔",
+      "category": "学习",
+      "subject_or_item": "化学",
+      "score": -2,
+      "reason": "化学作业未交",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207792,
+      "user_id": 20,
+      "user_name": "李乙禾",
+      "category": "学习",
+      "subject_or_item": "化学",
+      "score": -2,
+      "reason": "化学作业未交",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207793,
+      "user_id": 22,
+      "user_name": "刘炫华",
+      "category": "学习",
+      "subject_or_item": "化学",
+      "score": -2,
+      "reason": "化学作业未交",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207794,
+      "user_id": 29,
+      "user_name": "汪子涵",
+      "category": "学习",
+      "subject_or_item": "化学",
+      "score": -2,
+      "reason": "化学作业未交",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207795,
+      "user_id": 35,
+      "user_name": "尤顺",
+      "category": "学习",
+      "subject_or_item": "化学",
+      "score": -2,
+      "reason": "化学作业未交",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207796,
+      "user_id": 37,
+      "user_name": "张浩然",
+      "category": "学习",
+      "subject_or_item": "化学",
+      "score": -2,
+      "reason": "化学作业未交",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207797,
+      "user_id": 38,
+      "user_name": "赵潼鑫",
+      "category": "学习",
+      "subject_or_item": "化学",
+      "score": -2,
+      "reason": "化学作业未交",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207798,
+      "user_id": 47,
+      "user_name": "张宇翔",
+      "category": "学习",
+      "subject_or_item": "化学",
+      "score": -2,
+      "reason": "化学作业未交",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207799,
+      "user_id": 22,
+      "user_name": "刘炫华",
+      "category": "寝室",
+      "subject_or_item": "其它",
+      "score": -1,
+      "reason": "讲话",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207800,
+      "user_id": 24,
+      "user_name": "沙宇桐",
+      "category": "寝室",
+      "subject_or_item": "其它",
+      "score": -1,
+      "reason": "讲话",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207801,
+      "user_id": 21,
+      "user_name": "厉益和",
+      "category": "寝室",
+      "subject_or_item": "其它",
+      "score": -1,
+      "reason": "讲话",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
+    },
+    {
+      "id": 1791115207802,
+      "user_id": 40,
+      "user_name": "朱颂喆",
+      "category": "日常",
+      "subject_or_item": "其它",
+      "score": -2,
+      "reason": "垃圾晚倒",
+      "record_date": "2026-10-06",
+      "created_at": "2026-10-07T09:15:36.000Z",
+      "revoked": false,
+      "created_by": "stu38"
     }
   ],
   "audit": [
@@ -2629,6 +2837,12 @@
       "u": "stu38",
       "a": "批量录入",
       "d": "10/5:语文未交10人+寝室1+卫生1=12条"
+    },
+    {
+      "t": "2026-10-07T09:15:36.000Z",
+      "u": "stu38",
+      "a": "批量录入",
+      "d": "10/6:化学未交12人+寝室讲话3+卫生1=16条"
     }
   ]
 }
