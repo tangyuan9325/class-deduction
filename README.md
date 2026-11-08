@@ -144,3 +144,9 @@ web/              Vue3 前端源码（src）与构建产物（dist）
 ```bash
 python3 scripts/import_students.py --base-url http://localhost:8080 --csv roster.csv
 ```
+
+## 📄 许可证
+
+本项目采用 [MIT License](LICENSE) 开源。
+
+Copyright (c) 2026 TangYuan
