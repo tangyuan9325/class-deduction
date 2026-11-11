@@ -66,6 +66,7 @@ let me = null;
 let curView = 'dashboard';
 let lastSavedAt = '';
 let busy = false;
+let dataReady = false;
 let ghToken = '';                 // 仅内存 + 本标签页 sessionStorage
 let pending = {records:null, accounts:null, pwd:null};
 let pendingCount = 0;
@@ -362,40 +363,34 @@ function fetchTimeout(url, ms){
   const timer = setTimeout(()=>ctl.abort(), ms||6000);
   return fetch(url, {cache:'no-store', signal:ctl.signal}).finally(()=>clearTimeout(timer));
 }
-async function fetchRawFile(p){
+async function tryJson(url, ms){
+  try{
+    const r = await fetchTimeout(url, ms||6000);
+    if(!r.ok) return null;
+    return await r.json();
+  }catch(e){ return null; }
+}
+async function fetchRawFile(p, withRaw){
   const rel = relDataPath(p);
-  const sources = [
-    ()=>fetchTimeout('./data/'+rel+'?cb='+Date.now()),
-    ()=>fetchTimeout(rawFileUrl(p)+'?cb='+Date.now())
-  ];
+  const tasks = [tryJson('./data/'+rel+'?cb='+Date.now())];
+  if(withRaw !== false) tasks.push(tryJson(rawFileUrl(p)+'?cb='+Date.now()));
+  const arr = await Promise.all(tasks);
   let best = null;
-  for(const f of sources){
-    try{
-      const r = await f();
-      if(r.ok){
-        const j = await r.json();
-        if(j && j.version && (!best || (j.t||'') > (best.t||''))) best = j;
-      }
-    }catch(e){ /* 通道失败则换下一个 */ }
-  }
+  arr.forEach(j=>{
+    if(j && j.version && (!best || (j.t||'') > (best.t||''))) best = j;
+  });
   return best;
 }
 async function fetchRawPwd(p){
   const rel = relDataPath(p);
-  const sources = [
-    ()=>fetchTimeout('./data/'+rel+'?cb='+Date.now()),
-    ()=>fetchTimeout(rawFileUrl(p)+'?cb='+Date.now())
-  ];
+  const arr = await Promise.all([
+    tryJson('./data/'+rel+'?cb='+Date.now()),
+    tryJson(rawFileUrl(p)+'?cb='+Date.now(), 3000)
+  ]);
   let best = null;
-  for(const f of sources){
-    try{
-      const r = await f();
-      if(r.ok){
-        const j = await r.json();
-        if(j && j.pass && (!best || (j.updated_at||'') > (best.updated_at||''))) best = j;
-      }
-    }catch(e){}
-  }
+  arr.forEach(j=>{
+    if(j && j.pass && (!best || (j.updated_at||'') > (best.updated_at||''))) best = j;
+  });
   return best;
 }
 
@@ -740,6 +735,8 @@ async function doLogin(){
   const remember = $('loginRemember').checked;
   $('loginErr').textContent = '';
   if(!username || !pass){ $('loginErr').textContent = '请输入账号和密码'; return; }
+  if(!dataReady){ $('loginErr').textContent = '账号数据还在加载，请稍候再试'; return; }
+  if(!S.users.length){ $('loginErr').textContent = '没能加载账号数据，请刷新页面'; return; }
   const u = (S.users||[]).find(x=>x.username===username);
   const stored = u ? await loadPwd(username) : null;
   const v = stored ? await verifyPwd(pass, stored) : {ok:false};
@@ -1150,6 +1147,15 @@ function applyLocal(domain, data){
   updatePendingUI();
   $('leadVer').textContent = 'v'+APP_VERSION;
   $('brandMeta').textContent = 'v'+APP_VERSION;
+  const lb = $('btnLogin');
+  if(lb){ lb.disabled = true; lb.textContent = '正在加载'; }
+  // 兜底：网络异常时也不要让登录按钮一直不可用
+  setTimeout(()=>{
+    if(dataReady) return;
+    dataReady = true;
+    const b = $('btnLogin');
+    if(b){ b.disabled = false; b.textContent = '登录'; }
+  }, 9000);
 
   const ca = cacheLoad('accounts'), cr = cacheLoad('records'), cf = cacheLoad('feedback');
   applyLocal('accounts', ca); applyLocal('records', cr); applyLocal('feedback', cf);
@@ -1157,7 +1163,8 @@ function applyLocal(domain, data){
   renderLoginPreview();
 
   try{
-    const [acc, rec, fb] = await Promise.all([fetchRawFile(F_ACCOUNTS), fetchRawFile(F_RECORDS), fetchRawFile(F_FEEDBACK)]);
+    // 首屏先读同源 CDN，raw 源站交给首轮轮询补最新，避免拖慢打开速度
+    const [acc, rec, fb] = await Promise.all([fetchRawFile(F_ACCOUNTS, false), fetchRawFile(F_RECORDS, false), fetchRawFile(F_FEEDBACK, false)]);
     if(acc && acc.t && acc.t!==S.t.accounts){ applyLocal('accounts', acc); cacheSave('accounts', acc); }
     if(rec && rec.t && rec.t!==S.t.records){ applyLocal('records', rec); cacheSave('records', rec); }
     if(fb && fb.t && fb.t!==S.t.feedback){ applyLocal('feedback', fb); cacheSave('feedback', fb); }
@@ -1166,12 +1173,16 @@ function applyLocal(domain, data){
 
   if(!S.users.length && !S.records.length) S = defaultState();
   renderLoginPreview();
+  dataReady = true;
+  const loginBtn = $('btnLogin');
+  if(loginBtn){ loginBtn.disabled = false; loginBtn.textContent = '登录'; }
 
   if(!restoreSession()){
     $('loginView').classList.remove('hide');
     $('appView').classList.add('hide');
   }else{
     startPolling();
+    poll();
   }
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && me) startPolling(); });
 })();
