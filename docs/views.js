@@ -132,7 +132,7 @@ function renderDashboard(main){
     </div>`;
   }).join('');
 
-  const recent = rs.slice().sort((a,b)=>String(b.record_date).localeCompare(String(a.record_date)) || (b.id||0)-(a.id||0)).slice(0,6);
+  const recent = rs.slice().sort((a,b)=>String(b.record_date).localeCompare(String(a.record_date)) || (b.id||0)-(a.id||0)).slice(0,8);
   const recentRows = recent.length ? recent.map(r=>`<tr>
       <td class="num muted">${fmtDate(r.record_date).slice(5)}</td>
       <td>${esc(r.user_name)}</td>
