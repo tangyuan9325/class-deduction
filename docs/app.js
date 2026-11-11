@@ -825,6 +825,7 @@ function updateLockUI(){
     b.textContent = '解锁写入';
     b.style.color = '';
   }
+  renderNet();
 }
 function openUnlock(){
   return new Promise(res=>{
@@ -891,20 +892,124 @@ function nav(key){
   }
   curView = key;
   renderMenu();
-  renderViewSafe();
+  renderViewSafe(true);
   closeMenu();
 }
 // views.js 与 app.js 并行解析，首屏可能在视图函数就绪前触发渲染，这里做一次等待
-function renderViewSafe(){
-  if(typeof renderView === 'function'){ renderView(); return; }
-  if(renderViewSafe._t) return;
-  renderViewSafe._t = setTimeout(()=>{ renderViewSafe._t = 0; renderViewSafe(); }, 40);
+let viewAnimating = false;
+function renderViewSafe(animate){
+  const paint = ()=>renderView();
+  if(typeof renderView !== 'function'){
+    if(renderViewSafe._t) return;
+    renderViewSafe._t = setTimeout(()=>{ renderViewSafe._t = 0; renderViewSafe(animate); }, 40);
+    return;
+  }
+  const main = $('main');
+  const reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  if(!animate || !main || reduce || viewAnimating){ paint(); return; }
+  viewAnimating = true;
+  main.classList.add('is-leaving');
+  setTimeout(()=>{
+    paint();
+    main.classList.remove('is-leaving');
+    main.classList.add('is-entering');
+    void main.offsetWidth;               // 强制回流，让起始态生效
+    requestAnimationFrame(()=>{
+      main.classList.remove('is-entering');
+      setTimeout(()=>{ viewAnimating = false; }, 200);
+    });
+  }, 120);
 }
+// ---------- 侧边栏折叠 ----------
+const SIDE_KEY = 'cm_side';
+function sideMini(){ return !!(document.getElementById('appView')||{}).classList?.contains('side-mini'); }
+function applySide(mini){
+  const app = $('appView');
+  if(!app) return;
+  app.classList.toggle('side-mini', !!mini);
+  const b = $('btnSideToggle');
+  if(b){
+    b.setAttribute('aria-pressed', mini ? 'true' : 'false');
+    b.title = mini ? '展开侧边栏' : '收起侧边栏';
+    b.setAttribute('aria-label', b.title);
+  }
+  syncAvatar();
+}
+function syncAvatar(){
+  const av = $('meAvatar');
+  if(!av) return;
+  const nm = me ? (me.real_name || me.username || '') : '';
+  av.textContent = nm ? nm.slice(0,1) : '·';
+}
+function toggleSide(){
+  const app = $('appView');
+  if(!app) return;
+  const mini = !app.classList.contains('side-mini');
+  applySide(mini);
+  try{ localStorage.setItem(SIDE_KEY, mini ? '1' : '0'); }catch(e){}
+}
+function initSide(){
+  let mini = false;
+  try{ mini = localStorage.getItem(SIDE_KEY) === '1'; }catch(e){}
+  applySide(mini);
+}
+
+// ---------- 递交通道检测 ----------
+const NET_URL = 'https://api.github.com/rate_limit';
+let netState = 'checking';
+let netMs = 0;
+let netTimer = 0;
+let netAt = 0;
+function netInfo(){
+  if(netState === 'checking') return {dot:'dot off', text:'检测网络…', long:'正在检测 GitHub 递交通道…', bad:false};
+  if(netState === 'ok'){
+    const slow = netMs >= 1500;
+    return {dot:'dot',
+            text: ghToken ? 'GitHub 可递交' : 'GitHub 可递交 · 需解锁',
+            long: slow ? 'GitHub 通道正常，但当前网络较慢' : 'GitHub 通道正常，可以递交扣分',
+            bad:false};
+  }
+  return {dot:'dot bad', text:'GitHub 不可达', long:'连不上 GitHub，暂时只能查看，不能递交', bad:true};
+}
+function renderNet(){
+  const i = netInfo();
+  const t = $('netText');
+  if(t){
+    const d = t.querySelector('.dot'); if(d) d.className = i.dot;
+    const l = t.querySelector('.net-label');
+    if(l){ l.textContent = i.text; l.classList.toggle('bad', i.bad); }
+  }
+  const n = $('netLine');
+  if(n){
+    const d = n.querySelector('.dot'); if(d) d.className = i.dot;
+    const l = n.querySelector('.net-text');
+    if(l){ l.textContent = i.long; l.classList.toggle('bad', i.bad); }
+  }
+}
+async function checkNet(){
+  if(typeof navigator !== 'undefined' && navigator.onLine === false){
+    netState = 'block'; netMs = 0; renderNet(); return;
+  }
+  if(netState !== 'ok'){ netState = 'checking'; renderNet(); }
+  const t0 = (window.performance || Date).now();
+  try{
+    const r = await fetchTimeout(NET_URL + '?t=' + Date.now(), 5000);
+    netState = r.ok ? 'ok' : 'block';
+  }catch(e){
+    netState = 'block';
+  }
+  netMs = Math.round((window.performance || Date).now() - t0);
+  netAt = Date.now();
+  renderNet();
+  clearTimeout(netTimer);
+  netTimer = setTimeout(()=>{ if(!document.hidden) checkNet(); }, 180000);
+}
+
 function renderMenu(){
   const menu = $('menu');
   const defs = menuDefs();
   menu.innerHTML = defs.map(d=>`
-    <div class="menu-item${curView===d.key?' active':''}" data-key="${d.key}" role="link" tabindex="0">
+    <div class="menu-item${curView===d.key?' active':''}" data-key="${d.key}" role="link" tabindex="0" title="${esc(d.label)}">
       ${icon(d.ico)}<span>${esc(d.label)}</span>
     </div>`).join('');
   menu.querySelectorAll('.menu-item').forEach(el=>{
@@ -918,11 +1023,12 @@ function renderMenu(){
   rt.textContent = rtText;
   rt.style.display = (rtText && rtText !== nm) ? '' : 'none';
   $('brandMeta').textContent = 'v'+APP_VERSION;
+  syncAvatar();
   updateLockUI();
 }
 function renderAll(){
   renderMenu();
-  renderViewSafe();
+  renderViewSafe(false);
   updateSyncLabel();
   updatePendingUI();
 }
@@ -1116,6 +1222,17 @@ function bindEvents(){
     const ok = await openUnlock();
     if(ok) toast('写入已解锁');
   };
+  initSide();
+  $('btnSideToggle').onclick = toggleSide;
+  $('meAvatar').onclick = ()=>{ applySide(false); try{ localStorage.setItem(SIDE_KEY,'0'); }catch(e){} };
+  $('netText').onclick = ()=>checkNet();
+  $('btnNetRetry').onclick = ()=>checkNet();
+  window.addEventListener('online', ()=>checkNet());
+  window.addEventListener('offline', ()=>{ netState='block'; netMs=0; renderNet(); });
+  document.addEventListener('visibilitychange', ()=>{
+    if(!document.hidden && Date.now() - netAt > 120000) checkNet();
+  });
+  checkNet();
   $('btnBurger').innerHTML = icon('menu', 18);
   $('btnBurger').onclick = ()=>toggleMenu();
   $('menuBackdrop').onclick = ()=>closeMenu();
