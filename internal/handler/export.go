@@ -28,6 +28,11 @@ func NewExportHandler(svc *service.ExportService, summarySvc *service.SummarySer
 // ExportRecords 导出扣分明细 Excel
 // GET /api/v1/export/records?category=学习&subject_or_item=语文&target_user_id=1&start_date=&end_date=
 func (h *ExportHandler) ExportRecords(c *gin.Context) {
+	// 与记录列表保持一致：无「查看扣分记录」权限不得导出
+	if !h.permSvc.CanViewRecords(middleware.UserIDFromContext(c), middleware.RoleFromContext(c)) {
+		response.Fail(c, errcode.ErrForbidden)
+		return
+	}
 	f := service.ExportFilter{
 		Category:      c.Query("category"),
 		SubjectOrItem: c.Query("subject_or_item"),

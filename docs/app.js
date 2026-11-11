@@ -1,22 +1,14 @@
 /* ============================================================
- * 班级量化考核管理系统 · GitHub Pages 在线版 v1.3.0
- * 架构（参照 classroom-seat-arranger，v1.3.0 数据库拆分）：
- *   - GitHub Pages 静态托管，无后端服务器
- *   - 数据持久化：多文件存储于仓库 docs/data/
- *       accounts.json      —— 账号控制库（用户/角色/权限/性别/已读日志）
- *       records.json       —— 扣分/加分记录库 + 操作审计日志
- *       feedback.json      —— 意见反馈库
- *       users/<账号>/pwd.json —— 每用户独立密码文件
- *     通过 GH_TOKEN 调用 GitHub Contents API 读写（提交到仓库）
- *   - 实时同步：多端轮询（Pages CDN + raw 源站双通道，无 API 配额消耗）
- *   - v1.3.0 功能更新：
- *       · 学科老师账号（语文老师/英语老师），首登强制改密
- *       · 看板账号更名「看板」，可查看扣分明细，密码自助修改
- *       · 扣分记录全面显示原因（含备注），无备注显示「无备注」
- *       · 所有扣分/加分类别新增「其它」，选「其它」必填备注
- *       · 数据库拆分多文件，读写更高效
- *       · 「暂存-递交更新」：加/减分与账号修改先暂存，确认后统一递交
- *       · 按 2706 名单修复学生性别
+ * 班级量化考核 · 在线版 v1.4.20261111
+ * GitHub Pages 静态托管，数据以 JSON 存于仓库 docs/data/
+ *   accounts.json            账号、角色、权限、已读版本
+ *   records.json             扣分/加分记录 + 审计
+ *   feedback.json            意见反馈
+ *   users/<账号>/pwd.json     每用户独立密码（PBKDF2-SHA256 60 万次）
+ *
+ * 写入安全（v1.4）：
+ *   写令牌不再以任何可逆形式出现在仓库里，而是 AES-GCM 密文，
+ *   密钥由「写入口令」经 PBKDF2 派生。没有口令的访客只能读。
  * ============================================================ */
 'use strict';
 
@@ -27,18 +19,31 @@ const SYNC = {
   branch: 'main',
   dataDir: 'docs/data',
   apiBase: 'https://api.github.com',
-  rawBase: 'https://raw.githubusercontent.com'
+  rawBase: 'https://raw.githubusercontent.com',
+  maxWritesPerHour: 40
 };
-const pagesUrl = `https://${SYNC.owner}.github.io/${SYNC.repo}/`;
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.20261111';
 const DB_VERSION = 5;
 const PBKDF2_ITER = 600000;
 const F_ACCOUNTS = `${SYNC.dataDir}/accounts.json`;
-const F_RECORDS   = `${SYNC.dataDir}/records.json`;
-const F_FEEDBACK  = `${SYNC.dataDir}/feedback.json`;
+const F_RECORDS  = `${SYNC.dataDir}/records.json`;
+const F_FEEDBACK = `${SYNC.dataDir}/feedback.json`;
 const pwdPath = uname => `${SYNC.dataDir}/users/${uname}/pwd.json`;
 
-// 扣分/加分类别字典（v1.3.0：各小类新增「其它」）
+const RELEASE_NOTES = [
+  '写入安全升级：仓库内的 GitHub 写令牌改为 AES-GCM 密文，需输入写入口令才能解锁，公开源码不再包含可用凭据',
+  '页面全面重做：记分册视觉，宋体标题、纸墨配色、表格化数字，去掉渐变、发光与表情符号',
+  '导航改为线性图标，侧栏 34px 行高对齐，移动端抽屉重做',
+  '看板改为一张主图表：近 14 天净分，今日用靛色标出，其余为中性色',
+  '修复递交后提示永远显示「共 0 项」的问题',
+  '修复并发写入时后写覆盖先写、可能丢失他人账号修改的问题',
+  '修复轮询同步每 8 秒重绘页面、导致正在输入的内容与勾选丢失的问题',
+  '修复密码为 123456 等弱口令仍可设置、登录错误提示可枚举账号的问题',
+  '修复扣分记录缺字段时页面崩溃、CSV 导出加号被识别为公式的问题',
+  '增加内容安全策略（CSP）、写入频率限制与路径白名单'
+];
+
+// 扣分/加分类别字典
 const DICT = {
   deduct: [
     {name:'学习', items:['语文','数学','英语','物理','化学','技术','地理','历史','生物','政治','其它']},
@@ -48,48 +53,152 @@ const DICT = {
   ],
   bonus: ['助人为乐','学习进步','卫生优秀','纪律良好','比赛获奖','班级贡献','好人好事','其它']
 };
+const ALL_CATS = ['学习','寝室','日常','两操','加分'];
 
-// ---------- 全局状态 ----------
-let S = {                       // 内存数据（多域合并视图）
-  users: [],                    // 账号控制（无密码）
-  records: [],
-  audit: [],
-  feedback: [],
-  seen_changelog: {},
+// ---------- 状态 ----------
+let S = {
+  users: [], records: [], audit: [], feedback: [], seen_changelog: {},
   meta: {version:APP_VERSION, semester_start:'2026-09-01', changelog:[]},
-  pwdCache: {},                 // username -> 密码记录串
-  t: {accounts:'', records:'', feedback:''}   // 各域最新时间戳
+  pwdCache: {}, t: {accounts:'', records:'', feedback:''},
+  dirtyUsers: new Set(), deletedUsers: new Set()
 };
-let me = null;                  // 当前会话
+let me = null;
 let curView = 'dashboard';
 let lastSavedAt = '';
-let isWriting = false;
 let busy = false;
-// v1.3.0：暂存-递交
+let ghToken = '';                 // 仅内存 + 本标签页 sessionStorage
 let pending = {records:null, accounts:null, pwd:null};
 let pendingCount = 0;
-const PENDING_KEY = 'cm_pending_v5';
-const CACHE_KEY = n => 'cm_cache_'+n;
+let writeTimes = [];
+let staleData = false;
+const PENDING_KEY = 'cm_pending_v6';
+const SESSION_TMP = 'cm_session_tmp';
+const SESSION_LONG = 'cm_session';
+const GH_SESSION = 'cm_gh_session';
+const CACHE_KEY = n => 'cm_cache_' + n;
+
+// 视图局部状态（轮询重绘后保留）
+const UI = {
+  records: {cat:'', kw:'', page:1, size:20},
+  stuSum: {period:'daily'},
+  summary: {scope:'class', period:'week', user:''},
+  create: {selected:new Set(), search:''}
+};
 
 // ---------- 工具 ----------
 const $ = id => document.getElementById(id);
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 let toastTimer = null;
 function toast(msg, err=false){
   const t = $('toast');
   if(!t) return;
   t.textContent = msg;
-  t.className = 'toast show' + (err ? ' err' : '');
+  t.className = 'show' + (err ? ' err' : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=> t.className='toast', 2600);
+  toastTimer = setTimeout(()=>{ t.className=''; }, 3200);
 }
-function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function sha256hex(str){
-  return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
-    .then(buf => Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join(''));
+const sleep = ms => new Promise(r=>setTimeout(r, ms));
+function nowISO(){ return new Date().toISOString(); }
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-// ---------- PBKDF2 密码 ----------
+function fmtDate(s){
+  if(!s) return '';
+  if(s instanceof Date) return s.getFullYear()+'-'+String(s.getMonth()+1).padStart(2,'0')+'-'+String(s.getDate()).padStart(2,'0');
+  return String(s).slice(0,10);
+}
+function isSameDay(a,b){ return fmtDate(a)===fmtDate(b); }
+function weekRange(ref){
+  const d = ref ? new Date(ref) : new Date();
+  const day = (d.getDay()+6)%7;
+  const mon = new Date(d); mon.setDate(d.getDate()-day);
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  return [fmtDate(mon), fmtDate(sun)];
+}
+function monthRange(ref){
+  const d = ref ? new Date(ref) : new Date();
+  const s = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
+  const e = new Date(d.getFullYear(), d.getMonth()+1, 0);
+  return [s, fmtDate(e)];
+}
+function inRange(dateStr, start, end){ return dateStr>=start && dateStr<=end; }
+function weekNumOf(dateStr){
+  const sem = S.meta.semester_start || '2026-09-01';
+  const t0 = new Date(sem), t1 = new Date(dateStr);
+  return Math.max(1, Math.floor((t1-t0)/6048e5)+1);
+}
+function fmtTime(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  if(isNaN(d)) return '—';
+  const now = new Date();
+  const same = d.toDateString()===now.toDateString();
+  return (same?'':(String(d.getMonth()+1)+'月'+d.getDate()+'日 '))+
+    String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function csvSafe(v){
+  let s = String(v==null?'':v);
+  if(/^[=+\-@\t\r]/.test(s)) s = "'"+s;
+  return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+}
+function downloadCSV(name, rows){
+  const body = rows.map(r=>r.map(csvSafe).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF'+body], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+}
+
+// ---------- 图标（16px / 1.5 描边） ----------
+const ICONS = {
+  dash:'<rect x="3" y="3" width="7" height="9" rx="1.2"/><rect x="14" y="3" width="7" height="5" rx="1.2"/><rect x="14" y="12" width="7" height="9" rx="1.2"/><rect x="3" y="16" width="7" height="5" rx="1.2"/>',
+  note:'<path d="M15 3H5a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h11l4-4V4a1 1 0 0 0-1-1z"/><path d="M15 21v-4h4"/><path d="M8 8h7M8 12h7M8 16h4"/>',
+  board:'<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9h18M9 9v11"/>',
+  minus:'<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>',
+  plus:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  user:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  chat:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
+  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+  left:'<path d="M15 18l-6-6 6-6"/>',
+  right:'<path d="M9 18l6-6-6-6"/>',
+  x:'<path d="M18 6L6 18M6 6l12 12"/>',
+  menu:'<path d="M3 6h18M3 12h18M3 18h18"/>',
+  lock:'<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  unlock:'<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.5-2"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>',
+  key:'<circle cx="7.5" cy="15.5" r="3.5"/><path d="M10 13L20 3M16 7l3 3M13.5 9.5l2.5 2.5"/>',
+  refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+  check:'<path d="M20 6L9 17l-5-5"/>'
+};
+function icon(n, size){
+  const s = size || 16;
+  return `<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;
+}
+
+// ---------- 编码与密码 ----------
 function b64ToBuf(b64){ const bin=atob(b64); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u; }
 function bufToB64(buf){ let bin=''; const u=new Uint8Array(buf); for(let i=0;i<u.length;i++) bin+=String.fromCharCode(u[i]); return btoa(bin); }
+function utf8ToB64(str){
+  const u = new TextEncoder().encode(str);
+  let bin = '';
+  for(let i=0;i<u.length;i+=0x8000) bin += String.fromCharCode.apply(null, u.subarray(i, i+0x8000));
+  return btoa(bin);
+}
+function b64ToUtf8(b64){
+  const bin = atob(b64);
+  const u = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(u);
+}
 function randB64(len){ const u=new Uint8Array(len); crypto.getRandomValues(u); return bufToB64(u); }
 async function pbkdf2Derive(pass, saltB64, iter){
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveBits']);
@@ -104,63 +213,70 @@ async function makePwdRecord(pass){
 async function verifyPwd(pass, stored){
   if(!stored) return {ok:false};
   if(String(stored).startsWith('pbkdf2$')){
-    const parts = String(stored).split('$');
-    if(parts.length!==4) return {ok:false};
-    const iter = parseInt(parts[1],10)||PBKDF2_ITER;
-    const h = await pbkdf2Derive(pass, parts[2], iter);
-    return {ok: h===parts[3], legacy:false};
+    const p = String(stored).split('$');
+    if(p.length!==4) return {ok:false};
+    const iter = parseInt(p[1],10)||PBKDF2_ITER;
+    const h = await pbkdf2Derive(pass, p[2], iter);
+    return {ok: h===p[3], legacy:false};
   }
-  const h = await sha256hex(pass);
-  return {ok: h===stored, legacy:true};
+  // 旧版无盐 SHA-256，登录成功后自动升级
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
+  const hex = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  return {ok: hex===stored, legacy:true};
 }
-function csvSafe(v){
-  const s = String(v==null?'':v);
-  return /^[=+\-@\t\r]/.test(s) ? "'"+s : s;
-}
-function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-function fmtDate(s){
-  if(!s) return '';
-  if(s instanceof Date) return s.getFullYear()+'-'+String(s.getMonth()+1).padStart(2,'0')+'-'+String(s.getDate()).padStart(2,'0');
-  return String(s).slice(0,10);
-}
-function isSameDay(a,b){ return fmtDate(a)===fmtDate(b); }
-function weekRange(ref){
-  const d = ref ? new Date(ref) : new Date();
-  const day = (d.getDay()+6)%7;
-  const mon = new Date(d); mon.setDate(d.getDate()-day);
-  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
-  return [fmtDate(mon), fmtDate(sun)];
-}
-function inRange(dateStr, start, end){ return dateStr>=start && dateStr<=end; }
-function weekNumOf(dateStr){
-  const sem = S.meta.semester_start || '2026-09-01';
-  const t0=new Date(sem), t1=new Date(dateStr);
-  return Math.max(1, Math.floor((t1-t0)/6048e5)+1);
-}
-function monthRange(ref){
-  const d = ref?new Date(ref):new Date();
-  const s = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
-  const e = new Date(d.getFullYear(), d.getMonth()+1, 0);
-  return [s, fmtDate(e)];
+function pwdProblem(pass, username){
+  if(!pass || pass.length<8) return '密码至少 8 位';
+  if(/^\d+$/.test(pass) && pass.length<10) return '纯数字密码至少 10 位';
+  if(pass==='12345678'||pass==='123456789'||pass==='password') return '这个密码太常见，请换一个';
+  if(username && pass.toLowerCase()===String(username).toLowerCase()) return '密码不能与账号相同';
+  return '';
 }
 
-// ---------- 权限（v1.3.0：学科老师按 permissions 限定类别） ----------
-const ALL_CATS = ['学习','寝室','日常','两操','加分'];
-function isAdmin(){ return me && me.role==='admin'; }
-function isTeacher(){ return me && me.role==='teacher'; }
-function isStaff(){ return me && (me.role==='admin'||me.role==='teacher'); }
-function isViewer(){ return me && me.role==='viewer'; }
-function permOf(u){ return (u && u.permissions) || []; }
-function teacherUnrestricted(){ return isTeacher() && permOf(me).length===0; }
-function canEnter(role, cat){
-  if(role==='admin') return true;
-  if(role==='viewer') return false;
-  if(role==='teacher'){ const p=permOf(me); return p.length===0 || p.includes('全部') || p.includes(cat); }
-  return permOf(me).includes(cat);
+// ---------- 写入令牌保管库 ----------
+function vaultBlob(){
+  try{ return (typeof GH_VAULT!=='undefined' && GH_VAULT && GH_VAULT.ct) ? GH_VAULT : null; }
+  catch(e){ return null; }
 }
+async function deriveAesKey(pass, saltB64, iter){
+  const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'PBKDF2', salt:b64ToBuf(saltB64), iterations:iter, hash:'SHA-256'},
+    km, {name:'AES-GCM', length:256}, false, ['decrypt']
+  );
+}
+async function openVault(pass){
+  const v = vaultBlob();
+  if(!v) throw new Error('未配置写令牌');
+  const key = await deriveAesKey(pass, v.salt, v.iter||PBKDF2_ITER);
+  let pt;
+  try{
+    pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:b64ToBuf(v.iv)}, key, b64ToBuf(v.ct));
+  }catch(e){
+    throw new Error('口令不正确');
+  }
+  const token = new TextDecoder().decode(pt).trim();
+  if(!/^github_pat_[A-Za-z0-9_]+$|^ghp_[A-Za-z0-9]+$/.test(token)) throw new Error('令牌格式异常');
+  return token;
+}
+// 生成新的保管库（仅用于管理员在本机更换令牌）
+async function sealVault(token, pass){
+  const salt = randB64(16), iv = randB64(12);
+  const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey(
+    {name:'PBKDF2', salt:b64ToBuf(salt), iterations:PBKDF2_ITER, hash:'SHA-256'},
+    km, {name:'AES-GCM', length:256}, false, ['encrypt']
+  );
+  const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv:b64ToBuf(iv)}, key, new TextEncoder().encode(token));
+  return {v:1, alg:'AES-GCM', iter:PBKDF2_ITER, salt, iv, ct:bufToB64(ct), created:nowISO()};
+}
+function isStaff(){ return !!me && (me.role==='admin' || me.role==='teacher'); }
+function isAdmin(){ return !!me && me.role==='admin'; }
+function isTeacher(){ return !!me && me.role==='teacher'; }
+function isViewer(){ return !!me && me.role==='viewer'; }
+function permOf(u){ return (u && u.permissions) || []; }
 function canViewRecords(){
   if(!me) return false;
-  return isAdmin() || teacherUnrestricted() || permOf(me).includes('查看扣分记录');
+  return isAdmin() || (isTeacher() && permOf(me).length===0) || permOf(me).includes('查看扣分记录');
 }
 function canViewStats(){
   if(!me) return false;
@@ -168,128 +284,181 @@ function canViewStats(){
 }
 function canManageUsers(){ return isAdmin(); }
 function canManageFeedback(){ return isStaff(); }
-// 撤销记录权限：管理员 / 有任一录入权限者（看板等只读账号不可撤销）
+function canEnter(role, cat){
+  if(role==='admin') return true;
+  if(role==='viewer') return false;
+  if(role==='teacher'){ const p=permOf(me); return p.length===0 || p.includes('全部') || p.includes(cat); }
+  return permOf(me).includes(cat);
+}
 function canRevoke(){
   if(isAdmin()) return true;
-  const p=me.permissions||[];
-  if(p.length===0) return false;
-  return ALL_CATS.filter(c=>c!=='加分').some(c=>p.includes(c)) || p.includes('加分');
+  if(!me) return false;
+  const p = me.permissions || [];
+  return ALL_CATS.some(c=>p.includes(c));
 }
-function roleText(r){ return {admin:'管理员',teacher:'老师',student:'学生',viewer:'看板账号'}[r]||r; }
+function canWrite(){ return isStaff() && !!ghToken; }
+function roleText(r){ return {admin:'管理员',teacher:'老师',student:'学生',viewer:'看板'}[r]||r; }
 
 // ============================================================
-// GitHub 同步层（多文件）
+// GitHub 读写
 // ============================================================
 function apiFileUrl(p){ return `${SYNC.apiBase}/repos/${SYNC.owner}/${SYNC.repo}/contents/${p}`; }
 function rawFileUrl(p){ return `${SYNC.rawBase}/${SYNC.owner}/${SYNC.repo}/${SYNC.branch}/${p}`; }
-function pagesFileUrl(p){ return `${pagesUrl}${p}`; }
-
-// API 读单个文件：{sha, data, etag}
+function authHeaders(){
+  if(!ghToken) throw new Error('WRITE_LOCKED');
+  return {Authorization:'Bearer '+ghToken, Accept:'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28'};
+}
 async function apiGetFile(p){
-  const headers = {Authorization:'Bearer '+GH_TOKEN};
-  const r = await fetch(apiFileUrl(p), {headers, cache:'no-store'});
-  if(r.status===304){ return {sha:null, data:null, unchanged:true}; }
-  if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.message||('读取失败 '+r.status)); }
-  const d = await r.json();
-  return {sha: d.sha, data: JSON.parse(decodeURIComponent(escape(atob(d.content))))};
-}
-// API 写单个文件（read-merge-write 由调用方负责数据合并；此处带 409 重试）
-async function apiPutFile(p, data, msg){
-  for(let attempt=0; attempt<6; attempt++){
-    const cur = await apiGetFile(p).catch(()=>({sha:null, data:null}));
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-    const body = {message: msg||('update '+new Date().toLocaleString('zh-CN')), content, sha: cur.sha||undefined};
-    const r = await fetch(apiFileUrl(p), {method:'PUT', headers:{Authorization:'Bearer '+GH_TOKEN,'Content-Type':'application/json'}, body:JSON.stringify(body)});
-    if(r.ok) return;
-    if(r.status===409) continue;
+  const r = await fetch(apiFileUrl(p), {headers:authHeaders(), cache:'no-store'});
+  if(r.status===404) return {sha:null, data:null};
+  if(!r.ok){
     const d = await r.json().catch(()=>({}));
-    throw new Error(d.message||('写入失败 '+r.status));
+    throw new Error(r.status===401||r.status===403 ? '写令牌无效或已过期' : (d.message||('读取失败 '+r.status)));
   }
-  throw new Error('并发写入冲突，请重试');
+  const d = await r.json();
+  let data = null;
+  try{ data = JSON.parse(b64ToUtf8(d.content)); }catch(e){ data = null; }
+  return {sha:d.sha, data};
 }
-// 本地相对路径 + raw 源站双通道读取较新版本（不消耗 API 配额；部署于 Pages 时相对路径即 CDN）
+function assertWritablePath(p){
+  if(!p || p.includes('..') || p.startsWith('/')) throw new Error('非法的写入路径');
+  if(p!=='docs/data' && !p.startsWith('docs/data/')) throw new Error('非法的写入路径');
+}
+function guardWrite(){
+  if(!isStaff()) throw new Error('当前账号没有写入权限');
+  if(!ghToken) throw new Error('WRITE_LOCKED');
+  const now = Date.now();
+  writeTimes = writeTimes.filter(t=>now-t < 3600000);
+  if(writeTimes.length >= SYNC.maxWritesPerHour) throw new Error('写入过于频繁，请稍后再试');
+  writeTimes.push(now);
+}
+async function apiUpdateFile(p, mutator, msg){
+  assertWritablePath(p);
+  guardWrite();
+  for(let attempt=0; attempt<4; attempt++){
+    const cur = await apiGetFile(p);
+    let next;
+    try{ next = await mutator(cur.data); }
+    catch(e){ throw e; }
+    const body = {message:msg, content:utf8ToB64(JSON.stringify(next))};
+    if(cur.sha) body.sha = cur.sha;
+    const r = await fetch(apiFileUrl(p), {
+      method:'PUT',
+      headers:Object.assign({'Content-Type':'application/json'}, authHeaders()),
+      body:JSON.stringify(body)
+    });
+    if(r.ok) return next;
+    if(r.status===409 || r.status===422){ await sleep(240*(attempt+1)); continue; }
+    const d = await r.json().catch(()=>({}));
+    throw new Error(r.status===401||r.status===403 ? '写令牌无权写入此仓库' : (d.message||('写入失败 '+r.status)));
+  }
+  throw new Error('并发写入冲突，请稍后重试');
+}
+
+// ---------- 只读通道（不消耗 API 配额） ----------
+function relDataPath(p){ return p.replace(/^docs\/data\//,''); }
+function fetchTimeout(url, ms){
+  const ctl = new AbortController();
+  const timer = setTimeout(()=>ctl.abort(), ms||6000);
+  return fetch(url, {cache:'no-store', signal:ctl.signal}).finally(()=>clearTimeout(timer));
+}
 async function fetchRawFile(p){
-  const rel = p.replace(/^docs\/data\//,'');
-  const sources=[
-    ()=>fetch('./data/'+rel+'?cb='+Date.now(),{cache:'no-store'}),
-    ()=>fetch(rawFileUrl(p)+'?cb='+Date.now(),{cache:'no-store'})
+  const rel = relDataPath(p);
+  const sources = [
+    ()=>fetchTimeout('./data/'+rel+'?cb='+Date.now()),
+    ()=>fetchTimeout(rawFileUrl(p)+'?cb='+Date.now())
   ];
-  let best=null;
+  let best = null;
   for(const f of sources){
     try{
-      const r=await f();
+      const r = await f();
       if(r.ok){
-        const j=await r.json();
-        if(j && j.version){ if(!best || (j.t||'')>(best.t||'')) best=j; }
+        const j = await r.json();
+        if(j && j.version && (!best || (j.t||'') > (best.t||''))) best = j;
       }
-    }catch(e){}
+    }catch(e){ /* 通道失败则换下一个 */ }
   }
   return best;
 }
-// 密码文件读取（无 version 字段，按 updated_at 取较新）
 async function fetchRawPwd(p){
-  const rel = p.replace(/^docs\/data\//,'');
-  const sources=[
-    ()=>fetch('./data/'+rel+'?cb='+Date.now(),{cache:'no-store'}),
-    ()=>fetch(rawFileUrl(p)+'?cb='+Date.now(),{cache:'no-store'})
+  const rel = relDataPath(p);
+  const sources = [
+    ()=>fetchTimeout('./data/'+rel+'?cb='+Date.now()),
+    ()=>fetchTimeout(rawFileUrl(p)+'?cb='+Date.now())
   ];
-  let best=null;
+  let best = null;
   for(const f of sources){
     try{
-      const r=await f();
+      const r = await f();
       if(r.ok){
-        const j=await r.json();
-        if(j && j.pass){ if(!best || (j.updated_at||'')>(best.updated_at||'')) best=j; }
+        const j = await r.json();
+        if(j && j.pass && (!best || (j.updated_at||'') > (best.updated_at||''))) best = j;
       }
     }catch(e){}
   }
   return best;
 }
 
-// ---------- 域合并 ----------
+// ---------- 合并 ----------
 function dedupAudit(arr){
-  return (arr||[]).filter((v,i,a)=>a.findIndex(x=>x.t===v.t && x.a===v.a && x.u===v.u)===i);
+  const seen = new Set();
+  return (arr||[]).filter(v=>{
+    if(!v) return false;
+    const k = v.t+'|'+v.a+'|'+v.u+'|'+(v.d||'');
+    if(seen.has(k)) return false;
+    seen.add(k); return true;
+  }).slice(-600);
 }
 function mergeAccounts(remote){
-  // 本地有未递交的账号修改时，用户列表以本地为准；否则远程为准
-  const hasPendingAcc = !!(pending.accounts && (pending.accounts.upserts.length||pending.accounts.deletes.length));
-  if(!hasPendingAcc){
-    const map = new Map((S.users||[]).map(u=>[u.username,u]));
-    (remote.users||[]).forEach(u=>map.set(u.username,u));
-    S.users = Array.from(map.values());
+  const list = remote.users || [];
+  const map = new Map((S.users||[]).map(u=>[u.username,u]));
+  list.forEach(u=>{
+    if(S.deletedUsers.has(u.username)) return;
+    if(S.dirtyUsers.has(u.username)) return;
+    map.set(u.username, u);
+  });
+  S.users = Array.from(map.values()).sort((a,b)=>(a.id||0)-(b.id||0));
+  S.seen_changelog = Object.assign({}, S.seen_changelog, remote.seen_changelog||{});
+  if(remote.meta){
+    S.meta = Object.assign({}, S.meta, remote.meta, {changelog: remote.meta.changelog || S.meta.changelog});
   }
-  S.seen_changelog = Object.assign({}, remote.seen_changelog||{}, S.seen_changelog);
-  if(remote.meta){ S.meta = Object.assign({}, S.meta, remote.meta, {changelog: remote.meta.changelog || S.meta.changelog}); }
   if(remote.t) S.t.accounts = remote.t;
 }
 function mergeRecords(remote){
-  const rMap = new Map((S.records||[]).map(r=>[r.id,r]));
-  (remote.records||[]).forEach(r=>rMap.set(r.id,r));
-  // 本地未递交保护
+  const map = new Map((S.records||[]).map(r=>[r.id,r]));
+  (remote.records||[]).forEach(r=>{
+    const old = map.get(r.id);
+    map.set(r.id, old ? Object.assign({}, old, r, {revoked: !!(old.revoked||r.revoked)}) : r);
+  });
   if(pending.records){
-    (pending.records.adds||[]).forEach(r=>rMap.set(r.id,r));
-    (pending.records.revokes||[]).forEach(id=>{ const r=rMap.get(id); if(r) r.revoked=true; });
+    (pending.records.adds||[]).forEach(r=>map.set(r.id,r));
+    (pending.records.revokes||[]).forEach(id=>{ const r=map.get(id); if(r) r.revoked=true; });
   }
-  S.records = Array.from(rMap.values());
-  S.audit = dedupAudit([...(remote.audit||[]), ...(S.audit||[])]).slice(-600);
+  S.records = Array.from(map.values());
+  S.audit = dedupAudit([...(remote.audit||[]), ...(S.audit||[])]);
   if(remote.t) S.t.records = remote.t;
 }
 function mergeFeedback(remote){
-  const fMap = new Map((S.feedback||[]).map(f=>[f.id,f]));
-  (remote.feedback||[]).forEach(f=>fMap.set(f.id,f));
-  S.feedback = Array.from(fMap.values());
+  const map = new Map((S.feedback||[]).map(f=>[f.id,f]));
+  (remote.feedback||[]).forEach(f=>{
+    const old = map.get(f.id);
+    map.set(f.id, old ? Object.assign({}, old, f) : f);
+  });
+  S.feedback = Array.from(map.values());
   if(remote.t) S.t.feedback = remote.t;
 }
 function refreshMe(){
   if(!me) return;
-  const u=(S.users||[]).find(x=>x.username===me.username);
-  if(!u){ logout(); return; }
+  const u = (S.users||[]).find(x=>x.username===me.username);
+  if(!u){ logout(true); return; }
   me.permissions = u.permissions||[];
-  me.real_name = u.real_name; me.role = u.role;
+  me.real_name = u.real_name;
+  me.role = u.role;
+  me.id = u.id;
 }
 function applyRemote(st){
   if(!st) return false;
-  let changed=false;
+  let changed = false;
   if(st.accounts && st.accounts.t && st.accounts.t!==S.t.accounts){ mergeAccounts(st.accounts); changed=true; }
   if(st.records && st.records.t && st.records.t!==S.t.records){ mergeRecords(st.records); changed=true; }
   if(st.feedback && st.feedback.t && st.feedback.t!==S.t.feedback && canManageFeedback()){ mergeFeedback(st.feedback); changed=true; }
@@ -301,7 +470,7 @@ function applyRemote(st){
   return changed;
 }
 
-// 本地缓存（提速：秒开 + 减少轮询渲染）
+// ---------- 本地缓存 ----------
 function cacheSave(domain, data){
   try{ localStorage.setItem(CACHE_KEY(domain), JSON.stringify({t:data.t, data})); }catch(e){}
 }
@@ -315,38 +484,93 @@ function cacheLoad(domain){
 }
 
 // ============================================================
-// 写域（read-merge-write）；auditEntries 仅并入 records.json
+// 写域
 // ============================================================
-function nowISO(){ return new Date().toISOString(); }
-async function writeDomain(domain, auditEntries){
+function markUserDirty(u){
+  if(!u) return;
+  S.dirtyUsers.add(u.username);
+}
+async function writeRecordsDomain(auditEntries){
   const t = nowISO();
-  let data;
-  if(domain==='records'){
-    data = {version:DB_VERSION, t, records:S.records||[], audit:S.audit||[]};
-    if(auditEntries && auditEntries.length){
-      const u = me ? me.username : 'system';
-      data.audit = dedupAudit([...data.audit, ...auditEntries.map(a=>({t, u, a:a.action, d:a.detail||''}))]).slice(-500);
-    }
-    S.audit = data.audit; S.t.records = t;
-  }else if(domain==='accounts'){
-    data = {version:DB_VERSION, t, users:S.users||[], seen_changelog:S.seen_changelog||{}, meta:S.meta||{}};
-    S.t.accounts = t;
-  }else if(domain==='feedback'){
-    data = {version:DB_VERSION, t, feedback:S.feedback||[]};
-    S.t.feedback = t;
-  }else{ throw new Error('未知域 '+domain); }
-  await apiPutFile(domain==='records'?F_RECORDS:domain==='accounts'?F_ACCOUNTS:F_FEEDBACK, data, 'update '+new Date().toLocaleString('zh-CN'));
-  cacheSave(domain, data);
+  const u = me ? me.username : 'system';
+  const fresh = (auditEntries||[]).map(a=>({t, u, a:a.action, d:a.detail||''}));
+  const next = await apiUpdateFile(F_RECORDS, remote=>{
+    const map = new Map();
+    ((remote && remote.records) || []).forEach(r=>map.set(r.id,r));
+    (S.records||[]).forEach(r=>{
+      const old = map.get(r.id);
+      map.set(r.id, old ? Object.assign({}, old, {revoked: !!(old.revoked||r.revoked)}) : r);
+    });
+    const audit = dedupAudit([...((remote && remote.audit)||[]), ...(S.audit||[]), ...fresh]);
+    return {version:DB_VERSION, t, records:Array.from(map.values()), audit};
+  }, 'record: '+u+' '+((auditEntries||[]).map(a=>a.action).join(', ')||'更新'));
+  S.records = next.records;
+  S.audit = next.audit;
+  S.t.records = t;
+  cacheSave('records', next);
+  lastSavedAt = Math.max(S.t.accounts||'', S.t.records||'', S.t.feedback||'');
+  updateSyncLabel();
+}
+async function writeAccountsDomain(){
+  const t = nowISO();
+  const next = await apiUpdateFile(F_ACCOUNTS, remote=>{
+    const map = new Map();
+    ((remote && remote.users) || []).forEach(x=>map.set(x.username,x));
+    (S.users||[]).forEach(x=>{
+      if(S.dirtyUsers.has(x.username) || !map.has(x.username)) map.set(x.username,x);
+    });
+    S.deletedUsers.forEach(n=>map.delete(n));
+    const users = Array.from(map.values()).sort((a,b)=>(a.id||0)-(b.id||0));
+    return {
+      version:DB_VERSION, t, users,
+      seen_changelog:Object.assign({}, (remote&&remote.seen_changelog)||{}, S.seen_changelog),
+      meta:Object.assign({}, (remote&&remote.meta)||{}, S.meta)
+    };
+  }, 'account: '+(me?me.username:'system')+' 更新账号库');
+  S.users = next.users;
+  S.t.accounts = t;
+  S.dirtyUsers.clear();
+  S.deletedUsers.clear();
+  cacheSave('accounts', next);
+  lastSavedAt = Math.max(S.t.accounts||'', S.t.records||'', S.t.feedback||'');
+  updateSyncLabel();
+}
+async function writeFeedbackDomain(){
+  const t = nowISO();
+  const next = await apiUpdateFile(F_FEEDBACK, remote=>{
+    const map = new Map();
+    ((remote && remote.feedback) || []).forEach(f=>map.set(f.id,f));
+    (S.feedback||[]).forEach(f=>map.set(f.id,f));
+    return {version:DB_VERSION, t, feedback:Array.from(map.values())};
+  }, 'feedback: '+(me?me.username:'system'));
+  S.feedback = next.feedback;
+  S.t.feedback = t;
+  cacheSave('feedback', next);
   lastSavedAt = Math.max(S.t.accounts||'', S.t.records||'', S.t.feedback||'');
   updateSyncLabel();
 }
 async function writePwdFile(username, passRecord){
-  const data = {version: DB_VERSION, pass: passRecord, updated_at: nowISO()};
-  await apiPutFile(pwdPath(username), data, 'update pwd '+username);
+  assertWritablePath(pwdPath(username));
+  guardWrite();
+  const body = {
+    message:'pwd: '+username+' 更新密码',
+    content:utf8ToB64(JSON.stringify({version:DB_VERSION, pass:passRecord, updated_at:nowISO()}))
+  };
+  const cur = await apiGetFile(pwdPath(username)).catch(()=>({sha:null}));
+  if(cur && cur.sha) body.sha = cur.sha;
+  const r = await fetch(apiFileUrl(pwdPath(username)), {
+    method:'PUT',
+    headers:Object.assign({'Content-Type':'application/json'}, authHeaders()),
+    body:JSON.stringify(body)
+  });
+  if(!r.ok){
+    const d = await r.json().catch(()=>({}));
+    throw new Error(d.message||('密码写入失败 '+r.status));
+  }
 }
 
 // ============================================================
-// 暂存-递交更新（v1.3.0）
+// 暂存
 // ============================================================
 function persistPending(){
   try{ localStorage.setItem(PENDING_KEY, JSON.stringify({pending, pendingCount})); }catch(e){}
@@ -354,13 +578,11 @@ function persistPending(){
 function loadPending(){
   try{
     const o = JSON.parse(localStorage.getItem(PENDING_KEY)||'null');
-    if(o && o.pending){
-      pending = o.pending; pendingCount = o.pendingCount||0;
-    }
-  }catch(e){}
+    if(o && o.pending){ pending = o.pending; pendingCount = o.pendingCount||0; }
+  }catch(e){ pending = {records:null, accounts:null, pwd:null}; }
 }
 function countPending(){
-  let n=0;
+  let n = 0;
   if(pending.records) n += (pending.records.adds||[]).length + (pending.records.revokes||[]).length;
   if(pending.accounts) n += (pending.accounts.upserts||[]).length + (pending.accounts.deletes||[]).length + Object.keys(pending.accounts.pwdMap||{}).length;
   if(pending.pwd) n += 1;
@@ -370,12 +592,9 @@ function updatePendingUI(){
   pendingCount = countPending();
   const fab = $('pendingFab');
   if(!fab) return;
-  if(pendingCount>0){
-    fab.classList.remove('hide');
-    $('pendingCnt').textContent = pendingCount;
-  }else{
-    fab.classList.add('hide');
-  }
+  fab.classList.toggle('hide', pendingCount===0);
+  $('pendingCnt').textContent = pendingCount;
+  updateSyncLabel();
 }
 function stageRecordsAdd(records){
   pending.records = pending.records || {adds:[], revokes:[]};
@@ -388,6 +607,7 @@ function stageRecordsRevoke(id){
   persistPending(); updatePendingUI();
 }
 function stageAccountUpsert(user){
+  markUserDirty(user);
   pending.accounts = pending.accounts || {upserts:[], deletes:[], pwdMap:{}};
   pending.accounts.upserts = (pending.accounts.upserts||[]).filter(u=>u.username!==user.username);
   pending.accounts.upserts.push(JSON.parse(JSON.stringify(user)));
@@ -410,33 +630,34 @@ function stageSelfPwd(passRecord){
   pending.pwd = {username: me ? me.username : '', pass: passRecord};
   persistPending(); updatePendingUI();
 }
-// 生成暂存操作清单（用于递交确认弹窗）
 function pendingSummary(){
-  const lines=[];
+  const lines = [];
   if(pending.records){
-    (pending.records.adds||[]).forEach(r=>lines.push('录入'+(r.category==='加分'?'加分':'扣分')+'：'+r.user_name+' — '+r.subject_or_item+(r.reason?('（'+r.reason+'）'):'')));
-    (pending.records.revokes||[]).forEach(id=>lines.push('撤销记录：#'+id));
+    (pending.records.adds||[]).forEach(r=>lines.push('录入'+(r.category==='加分'?'加分':'扣分')+' · '+r.user_name+' · '+r.subject_or_item+(r.reason?('（'+r.reason+'）'):'')));
+    (pending.records.revokes||[]).forEach(id=>lines.push('撤销记录 #'+id));
   }
   if(pending.accounts){
-    (pending.accounts.upserts||[]).forEach(u=>lines.push('账号修改：'+u.username+'（'+u.real_name+'）'));
-    (pending.accounts.deletes||[]).forEach(n=>lines.push('删除用户：'+n));
-    Object.keys(pending.accounts.pwdMap||{}).forEach(n=>lines.push('重置密码：'+n));
+    (pending.accounts.upserts||[]).forEach(u=>lines.push('账号变更 · '+u.username+'（'+u.real_name+'）'));
+    (pending.accounts.deletes||[]).forEach(n=>lines.push('删除用户 · '+n));
+    Object.keys(pending.accounts.pwdMap||{}).forEach(n=>lines.push('重置密码 · '+n));
   }
-  if(pending.pwd) lines.push('修改密码：'+pending.pwd.username);
+  if(pending.pwd) lines.push('修改密码 · '+pending.pwd.username);
   return lines;
 }
 async function commitPending(){
   if(pendingCount===0) return;
-  const hasAcc = !!(pending.accounts && ((pending.accounts.upserts||[]).length||(pending.accounts.deletes||[]).length||Object.keys(pending.accounts.pwdMap||{}).length));
-  if(hasAcc){
-    const auth = await requirePass();
-    if(!auth){ toast('已取消递交', true); return; }
-  }
   $('pendingMask').classList.add('hide');
+  if(!await ensureUnlocked()) return;
+  const hasAcc = !!(pending.accounts && ((pending.accounts.upserts||[]).length || (pending.accounts.deletes||[]).length || Object.keys(pending.accounts.pwdMap||{}).length));
+  if(hasAcc){
+    const ok = await requirePass('递交账号与密码变更前，请再次确认是你本人操作。');
+    if(!ok){ toast('已取消递交'); return; }
+  }
   if(busy) return;
   busy = true;
-  const fab=$('pendingFab'); if(fab) fab.classList.add('busy');
-  const auditEntries=[];
+  const fab = $('pendingFab'); if(fab) fab.classList.add('busy');
+  const summary = pendingSummary();
+  const auditEntries = [];
   if(pending.records){
     (pending.records.adds||[]).forEach(r=>auditEntries.push({action:r.category==='加分'?'录入加分':'录入扣分', detail:r.user_name+' '+r.subject_or_item}));
     (pending.records.revokes||[]).forEach(id=>auditEntries.push({action:'撤销记录', detail:String(id)}));
@@ -448,137 +669,246 @@ async function commitPending(){
   }
   if(pending.pwd) auditEntries.push({action:'修改密码', detail:pending.pwd.username});
   try{
-    const tasks=[];
-    tasks.push(writeDomain('records', auditEntries));       // 审计统一并入 records.json
+    const tasks = [writeRecordsDomain(auditEntries)];
     if(pending.accounts){
-      tasks.push(writeDomain('accounts'));
+      tasks.push(writeAccountsDomain());
       for(const [uname, pass] of Object.entries(pending.accounts.pwdMap||{})) tasks.push(writePwdFile(uname, pass));
     }
     if(pending.pwd){
       tasks.push(writePwdFile(pending.pwd.username, pending.pwd.pass));
-      if(!pending.accounts) tasks.push(writeDomain('accounts')); // 同步 must_change 等
+      if(!pending.accounts){
+        const self = (S.users||[]).find(u=>u.username===pending.pwd.username);
+        if(self) markUserDirty(self);
+        tasks.push(writeAccountsDomain());
+      }
     }
     await Promise.all(tasks);
     pending = {records:null, accounts:null, pwd:null};
     persistPending(); updatePendingUI();
-    toast('已递交更新 ✓ 共 '+pendingSummary().length+' 项');
+    toast('已递交 '+summary.length+' 项更新');
     renderAll();
   }catch(e){
-    toast('递交失败：'+e.message, true);
+    toast(errText(e), true);
   }finally{
-    busy=false;
+    busy = false;
     if(fab) fab.classList.remove('busy');
   }
 }
+function errText(e){
+  const m = e && e.message ? e.message : String(e);
+  if(m==='WRITE_LOCKED') return '写入未解锁，请先输入写入口令';
+  if(/Failed to fetch|NetworkError/.test(m)) return '网络不可用，请检查连接后重试';
+  return m;
+}
 
 // ============================================================
-// 认证
+// 会话与登录
 // ============================================================
-function saveSession(){ const k = me.remember?'cm_session':'cm_session_tmp'; (me.remember?localStorage:sessionStorage).setItem(k, JSON.stringify({username:me.username, remember:me.remember})); }
-function clearSession(){ localStorage.removeItem('cm_session'); sessionStorage.removeItem('cm_session_tmp'); }
+const WEAK_DEFAULT = '123456';
+function saveSession(){
+  if(!me) return;
+  const exp = Date.now() + (me.remember ? 7*864e5 : 12*36e5);
+  const payload = JSON.stringify({username:me.username, remember:me.remember, exp});
+  try{
+    if(me.remember) localStorage.setItem(SESSION_LONG, payload);
+    else sessionStorage.setItem(SESSION_TMP, payload);
+  }catch(e){}
+}
+function clearSession(){
+  try{ localStorage.removeItem(SESSION_LONG); }catch(e){}
+  try{ sessionStorage.removeItem(SESSION_TMP); }catch(e){}
+}
+function readSession(){
+  let sv = null;
+  try{ sv = JSON.parse(localStorage.getItem(SESSION_LONG)||'null'); }catch(e){}
+  if(!sv){ try{ sv = JSON.parse(sessionStorage.getItem(SESSION_TMP)||'null'); }catch(e){} }
+  if(!sv || !sv.username) return null;
+  if(sv.exp && Date.now() > sv.exp){ clearSession(); return null; }
+  return sv;
+}
 async function loadPwd(username){
   if(S.pwdCache[username]) return S.pwdCache[username];
   try{
     const st = await fetchRawPwd(pwdPath(username));
-    if(st && st.pass){ S.pwdCache[username]=st.pass; return st.pass; }
+    if(st && st.pass){ S.pwdCache[username] = st.pass; return st.pass; }
   }catch(e){}
   return null;
 }
 async function doLogin(){
-  const username=$('loginUser').value.trim();
-  const pass=$('loginPass').value;
-  const remember = document.querySelector('input[name=remember]:checked').value==='1';
-  $('loginErr').textContent='';
-  if(!username||!pass){ $('loginErr').textContent='请输入账号和密码'; return; }
+  const username = $('loginUser').value.trim();
+  const pass = $('loginPass').value;
+  const remember = $('loginRemember').checked;
+  $('loginErr').textContent = '';
+  if(!username || !pass){ $('loginErr').textContent = '请输入账号和密码'; return; }
   const u = (S.users||[]).find(x=>x.username===username);
-  if(!u){ $('loginErr').textContent='账号不存在'; return; }
-  const stored = await loadPwd(username);
-  if(!stored){ $('loginErr').textContent='账号数据异常，请联系管理员'; return; }
-  const v = await verifyPwd(pass, stored);
-  if(!v.ok){ $('loginErr').textContent='密码错误'; return; }
+  const stored = u ? await loadPwd(username) : null;
+  const v = stored ? await verifyPwd(pass, stored) : {ok:false};
+  if(!u || !v.ok){
+    $('loginErr').textContent = '账号或密码不正确';
+    return;
+  }
   me = {id:u.id, username:u.username, real_name:u.real_name, role:u.role, permissions:u.permissions||[], remember};
   saveSession();
-  // v1.2.0 延续：旧版 SHA-256 账号登录成功自动升级为 PBKDF2（立即写，不入暂存）
   if(v.legacy){
     try{
       const np = await makePwdRecord(pass);
       S.pwdCache[username] = np;
-      await writePwdFile(username, np);
-      S.audit = dedupAudit([...(S.audit||[]), {t:nowISO(), u:username, a:'升级密码哈希', d:username}]).slice(-500);
-    }catch(e){ /* 升级失败不阻断登录，下次再试 */ }
+      if(ghToken) await writePwdFile(username, np);
+    }catch(e){ /* 升级失败不阻断登录 */ }
   }
   $('loginView').classList.add('hide');
   $('appView').classList.remove('hide');
+  curView = canViewStats() ? 'dashboard' : 'personal';
   renderAll();
-  // 首次进入更新日志
-  if(!S.seen_changelog[u.username]){
-    showChangelog();
-  }
-  if(u.must_change && u.role!=='admin'){
-    openChangePass(true);
-  }
+  // 首次登录优先设置密码，更新日志放到之后
+  if(u.must_change && u.role!=='admin') openChangePass(true);
+  else if(!seenCurrentRelease(u.username)) showChangelog();
+  if(ghToken) toast('已登录，写入已解锁');
 }
-function logout(){
-  if(pendingCount>0){
-    const y = confirm('有 '+pendingCount+' 项未递交的更改，退出后将丢失。确定退出？');
-    if(!y) return;
+function logout(silent){
+  if(!silent && pendingCount>0){
+    askConfirm('有 '+pendingCount+' 项未递交的更改，退出后会丢失。', '退出登录').then(y=>{
+      if(y) doLogout();
+    });
+    return;
   }
-  me=null; clearSession();
+  doLogout();
+}
+function doLogout(){
+  me = null;
+  clearSession();
+  lockWrite(true);
   $('appView').classList.add('hide');
   $('loginView').classList.remove('hide');
+  $('loginPass').value = '';
 }
 function restoreSession(){
-  let sv=null;
-  try{ sv = JSON.parse(localStorage.getItem('cm_session')||'null'); }catch(e){}
-  if(!sv){ try{ sv = JSON.parse(sessionStorage.getItem('cm_session_tmp')||'null'); }catch(e){} }
-  if(!sv) return;
-  const u=(S.users||[]).find(x=>x.username===sv.username);
-  if(!u){ clearSession(); return; }
-  me={id:u.id, username:u.username, real_name:u.real_name, role:u.role, permissions:u.permissions||[], remember:sv.remember};
+  const sv = readSession();
+  if(!sv) return false;
+  const u = (S.users||[]).find(x=>x.username===sv.username);
+  if(!u){ clearSession(); return false; }
+  me = {id:u.id, username:u.username, real_name:u.real_name, role:u.role, permissions:u.permissions||[], remember:!!sv.remember};
   $('loginView').classList.add('hide');
   $('appView').classList.remove('hide');
+  curView = canViewStats() ? 'dashboard' : 'personal';
   renderAll();
+  return true;
 }
 
 // ============================================================
-// 导航
+// 写入解锁
+// ============================================================
+function lockWrite(silent){
+  ghToken = '';
+  try{ sessionStorage.removeItem(GH_SESSION); }catch(e){}
+  updateLockUI();
+  if(!silent) toast('写入已锁定，本设备需要重新输入口令');
+}
+function restoreWrite(){
+  try{
+    const t = sessionStorage.getItem(GH_SESSION);
+    if(t && /^github_pat_|^ghp_/.test(t)) ghToken = t;
+  }catch(e){}
+  updateLockUI();
+}
+function updateLockUI(){
+  const b = $('btnLock');
+  if(!b) return;
+  if(ghToken){
+    b.textContent = '写入已解锁';
+    b.style.color = 'var(--accent)';
+  }else{
+    b.textContent = '解锁写入';
+    b.style.color = '';
+  }
+}
+function openUnlock(){
+  return new Promise(res=>{
+    const mask = $('unlockMask');
+    $('unlockPass').value = '';
+    $('unlockErr').textContent = '';
+    mask.classList.remove('hide');
+    setTimeout(()=>$('unlockPass').focus(), 30);
+    const done = v=>{
+      mask.classList.add('hide');
+      $('btnUnlockOk').onclick = null;
+      $('btnUnlockNo').onclick = null;
+      $('unlockPass').onkeydown = null;
+      res(v);
+    };
+    const submit = async ()=>{
+      const pass = $('unlockPass').value;
+      if(!pass){ $('unlockErr').textContent = '请输入写入口令'; return; }
+      $('btnUnlockOk').disabled = true;
+      try{
+        const t = await openVault(pass);
+        ghToken = t;
+        try{ sessionStorage.setItem(GH_SESSION, t); }catch(e){}
+        updateLockUI();
+        done(true);
+      }catch(e){
+        $('unlockErr').textContent = e.message || '解锁失败';
+      }finally{
+        $('btnUnlockOk').disabled = false;
+      }
+    };
+    $('btnUnlockOk').onclick = submit;
+    $('btnUnlockNo').onclick = ()=>done(false);
+    $('unlockPass').onkeydown = e=>{ if(e.key==='Enter') submit(); };
+  });
+}
+async function ensureUnlocked(){
+  if(!isStaff()){ toast('当前账号没有写入权限', true); return false; }
+  if(ghToken) return true;
+  const ok = await openUnlock();
+  return !!ok;
+}
+
+// ============================================================
+// 导航与渲染
 // ============================================================
 function menuDefs(){
-  const m=[];
-  m.push({key:'dashboard', ico:'📊', label:'班级看板', show:()=> canViewStats()});
-  m.push({key:'summary', ico:'📝', label:'周/学期小结', show:()=>true});
-  m.push({key:'student-summary', ico:'📋', label:'同学扣分汇总', show:()=> canViewStats()});
-  m.push({key:'record-create', ico:'➖', label:'录入扣分', show:()=> ALL_CATS.filter(c=>c!=='加分' && canEnter(me.role,c)).length>0});
-  m.push({key:'bonus-create', ico:'➕', label:'录入加分', show:()=> canEnter(me.role,'加分')});
-  m.push({key:'records', ico:'🗂️', label:'扣分记录', show:()=> canViewRecords()});
-  m.push({key:'personal', ico:'👤', label:'个人统计', show:()=>true});
-  m.push({key:'feedback', ico:'💬', label:'意见反馈', show:()=>true});
-  m.push({key:'about', ico:'ℹ️', label:'关于与克隆', show:()=>true});
-  if(canManageUsers()) m.push({key:'users', ico:'👥', label:'用户管理', show:()=>true});
-  return m.filter(x=>x.show());
+  return [
+    {key:'dashboard', ico:'dash', label:'班级看板', show:()=>canViewStats()},
+    {key:'summary', ico:'note', label:'周与学期小结', show:()=>true},
+    {key:'student-summary', ico:'board', label:'同学扣分汇总', show:()=>canViewStats()},
+    {key:'record-create', ico:'minus', label:'录入扣分', show:()=>ALL_CATS.filter(c=>c!=='加分' && canEnter(me.role,c)).length>0},
+    {key:'bonus-create', ico:'plus', label:'录入加分', show:()=>canEnter(me.role,'加分')},
+    {key:'records', ico:'list', label:'扣分记录', show:()=>canViewRecords()},
+    {key:'personal', ico:'user', label:'个人统计', show:()=>true},
+    {key:'feedback', ico:'chat', label:'意见反馈', show:()=>true},
+    {key:'users', ico:'users', label:'用户管理', show:()=>canManageUsers()},
+    {key:'about', ico:'info', label:'关于与部署', show:()=>true}
+  ].filter(x=>x.show());
 }
 function nav(key){
-  curView=key;
-  document.querySelectorAll('.menu-item').forEach(el=>el.classList.toggle('active', el.dataset.key===key));
+  if(pendingCount>0 && (curView==='record-create'||curView==='bonus-create') && key!==curView){
+    UI.create.selected = new Set();
+  }
+  curView = key;
+  renderMenu();
   renderView();
+  closeMenu();
 }
 function renderMenu(){
-  const menu=$('menu');
-  menu.innerHTML='';
-  menuDefs().forEach(d=>{
-    const el=document.createElement('div');
-    el.className='menu-item'+(curView===d.key?' active':'');
-    el.dataset.key=d.key;
-    el.innerHTML=`<span class="ico">${d.ico}</span><span>${d.label}</span>`;
-    el.onclick=()=>nav(d.key);
-    menu.appendChild(el);
+  const menu = $('menu');
+  const defs = menuDefs();
+  menu.innerHTML = defs.map(d=>`
+    <div class="menu-item${curView===d.key?' active':''}" data-key="${d.key}" role="link" tabindex="0">
+      ${icon(d.ico)}<span>${esc(d.label)}</span>
+    </div>`).join('');
+  menu.querySelectorAll('.menu-item').forEach(el=>{
+    el.onclick = ()=>nav(el.dataset.key);
+    el.onkeydown = e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); nav(el.dataset.key); } };
   });
-  $('whoami').textContent = me.real_name||me.username;
-  const rt=$('roleTag');
-  rt.textContent=roleText(me.role);
-  rt.className='tag '+(me.role==='viewer'?'blue':(me.role==='student'?'green':'yellow'));
-  $('brandVer').textContent='v'+APP_VERSION;
-  $('brandSub').textContent='v'+APP_VERSION;
+  const nm = me ? (me.real_name||me.username) : '';
+  $('whoami').textContent = nm;
+  const rt = $('roleTag');
+  const rtText = me ? roleText(me.role) : '';
+  rt.textContent = rtText;
+  rt.style.display = (rtText && rtText !== nm) ? '' : 'none';
+  $('brandMeta').textContent = 'v'+APP_VERSION;
+  updateLockUI();
 }
 function renderAll(){
   renderMenu();
@@ -586,176 +916,262 @@ function renderAll(){
   updateSyncLabel();
   updatePendingUI();
 }
+function viewIsBusy(){
+  if(document.querySelector('.mask:not(.hide)')) return true;
+  const el = document.activeElement;
+  return !!el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
+}
+function updateSyncLabel(){
+  const el = $('syncText');
+  if(!el) return;
+  const t = lastSavedAt ? fmtTime(lastSavedAt) : '';
+  const state = pendingCount>0 ? 'warn' : (lastSavedAt ? '' : 'off');
+  el.innerHTML = `<span class="dot ${state}"></span><span>${pendingCount>0
+    ? ('待递交 '+pendingCount+' 项')
+    : (t ? ('已同步 · '+t) : '同步中')}</span>`;
+}
+function showRefreshChip(){
+  staleData = true;
+  const chip = $('refreshChip');
+  if(!chip) return;
+  chip.classList.remove('hide');
+  chip.innerHTML = '有新的记录 '+icon('refresh',14);
+  chip.onclick = ()=>{
+    chip.classList.add('hide');
+    staleData = false;
+    renderAll();
+  };
+}
 
 // ============================================================
-// 轮询实时同步（v1.3.0：CDN+raw 双通道，无 API 配额消耗）
+// 轮询
 // ============================================================
 let pollingTimer = null;
-let pageHidden = false;
-function updateSyncLabel(){
-  const t=lastSavedAt?new Date(lastSavedAt).toLocaleTimeString('zh-CN'):'';
-  const el=$('syncText'); if(!el) return;
-  el.textContent = '实时同步 · 更新于 '+(t||'—')+(pendingCount>0?(' · 待递交 '+pendingCount+' 项'):'');
-}
 async function poll(){
-  if(pageHidden || busy) return;
+  if(document.hidden || busy || !S.users.length) return;
   try{
     const [acc, rec] = await Promise.all([fetchRawFile(F_ACCOUNTS), fetchRawFile(F_RECORDS)]);
-    let changed=false;
-    if(acc && acc.t && acc.t!==S.t.accounts){ mergeAccounts(acc); cacheSave('accounts', acc); changed=true; }
-    if(rec && rec.t && rec.t!==S.t.records){ mergeRecords(rec); cacheSave('records', rec); changed=true; }
+    let changed = false;
+    if(acc && acc.t && acc.t!==S.t.accounts){ mergeAccounts(acc); cacheSave('accounts', acc); changed = true; }
+    if(rec && rec.t && rec.t!==S.t.records){ mergeRecords(rec); cacheSave('records', rec); changed = true; }
     if(changed){
       lastSavedAt = Math.max(S.t.accounts||'', S.t.records||'', S.t.feedback||'');
-      refreshMe(); renderAll();
+      refreshMe();
+      if(!me) return;
+      if(viewIsBusy()) showRefreshChip();
+      else { if(staleData){ $('refreshChip').classList.add('hide'); staleData=false; } renderAll(); }
+      updateSyncLabel();
+      renderLoginPreview();
     }
-  }catch(e){}
+  }catch(e){ /* 轮询失败静默重试 */ }
 }
 function startPolling(){
-  pollingTimer = setInterval(poll, 8000);
+  if(pollingTimer) clearInterval(pollingTimer);
+  pollingTimer = setInterval(poll, 10000);
   document.addEventListener('visibilitychange', ()=>{
-    pageHidden = document.hidden;
-    if(!pageHidden) poll();
+    if(!document.hidden) poll();
   });
 }
 
 // ============================================================
 // 更新日志
 // ============================================================
-function showChangelog(){
-  const list=$('changelogList');
-  list.innerHTML='';
-  (S.meta.changelog||[]).forEach(c=>{ const li=document.createElement('li'); li.textContent=c; list.appendChild(li); });
-  $('changelogMask').classList.remove('hide');
+function seenCurrentRelease(username){
+  return S.seen_changelog[username]===APP_VERSION;
 }
-async function markChangelogSeen(){
-  S.seen_changelog[me.username]=true;
-  $('changelogMask').classList.add('hide');
-  try{
-    // 立即写入账号库（保持多端已读状态），失败不阻断
-    await writeDomain('accounts');
-  }catch(e){}
+function showChangelog(){
+  const notes = RELEASE_NOTES;
+  $('changelogTitle').textContent = '更新到 v'+APP_VERSION;
+  $('changelogList').innerHTML = notes.map(n=>`<li>${esc(n)}</li>`).join('');
+  $('changelogMask').classList.remove('hide');
+  $('btnChangelogOk').onclick = async ()=>{
+    $('changelogMask').classList.add('hide');
+    if(!me) return;
+    S.seen_changelog[me.username] = APP_VERSION;
+    try{
+      if(ghToken) await writeAccountsDomain();
+      else cacheSave('accounts', {version:DB_VERSION, t:S.t.accounts, users:S.users, seen_changelog:S.seen_changelog, meta:S.meta});
+    }catch(e){ /* 已读状态写失败不影响使用 */ }
+  };
 }
 
 // ============================================================
-// 确认框
+// 通用对话框
 // ============================================================
-function askConfirm(msg){
+function askConfirm(msg, title, okText){
   return new Promise(res=>{
-    $('confirmMsg').textContent=msg;
+    $('confirmTitle').textContent = title || '请确认';
+    $('confirmMsg').textContent = msg;
+    $('btnConfirmOk').textContent = okText || '确定';
     $('confirmMask').classList.remove('hide');
-    const done=v=>{ $('confirmMask').classList.add('hide'); $('btnConfirmOk').onclick=null; $('btnConfirmNo').onclick=null; res(v); };
-    $('btnConfirmOk').onclick=()=>done(true);
-    $('btnConfirmNo').onclick=()=>done(false);
+    const done = v=>{
+      $('confirmMask').classList.add('hide');
+      $('btnConfirmOk').onclick = null;
+      $('btnConfirmNo').onclick = null;
+      res(v);
+    };
+    $('btnConfirmOk').onclick = ()=>done(true);
+    $('btnConfirmNo').onclick = ()=>done(false);
   });
 }
-
-// ============================================================
-// 敏感操作二次密码验证（v1.2.0 延续）
-// ============================================================
-function requirePass(){
-  return new Promise(async res=>{
-    const mask=$('passMask');
-    $('passMsg').textContent='为保护账号安全，请再次输入当前密码以确认操作：';
-    $('passInput').value='';
-    $('passErr').textContent='';
+function requirePass(msg){
+  return new Promise(res=>{
+    const mask = $('passMask');
+    $('passMsg').textContent = msg || '请输入当前密码以确认操作。';
+    $('passInput').value = '';
+    $('passErr').textContent = '';
     mask.classList.remove('hide');
-    $('passInput').focus();
-    const done=v=>{ mask.classList.add('hide'); $('btnPassOk').onclick=null; $('btnPassNo').onclick=null; $('passInput').onkeydown=null; res(v); };
-    $('btnPassNo').onclick=()=>done(false);
-    $('btnPassOk').onclick=async ()=>{
+    setTimeout(()=>$('passInput').focus(), 30);
+    const done = v=>{
+      mask.classList.add('hide');
+      $('btnPassOk').onclick = null;
+      $('btnPassNo').onclick = null;
+      $('passInput').onkeydown = null;
+      res(v);
+    };
+    $('btnPassNo').onclick = ()=>done(false);
+    $('btnPassOk').onclick = async ()=>{
       const stored = me ? (S.pwdCache[me.username] || await loadPwd(me.username)) : null;
       const ok = await verifyPwd($('passInput').value, stored);
-      if(!ok.ok){ $('passErr').textContent='密码错误，请重试'; return; }
+      if(!ok.ok){ $('passErr').textContent = '密码不正确'; return; }
       done(true);
     };
-    $('passInput').onkeydown=e=>{ if(e.key==='Enter') $('btnPassOk').click(); };
+    $('passInput').onkeydown = e=>{ if(e.key==='Enter') $('btnPassOk').click(); };
   });
+}
+function openPendingDialog(){
+  if(pendingCount===0) return;
+  const list = pendingSummary();
+  $('pendingTotal').textContent = list.length;
+  $('pendingList').innerHTML = list.map(x=>`<li>${esc(x)}</li>`).join('');
+  $('pendingMask').classList.remove('hide');
+  $('btnPendingOk').onclick = ()=>commitPending();
+  $('btnPendingNo').onclick = ()=>{ $('pendingMask').classList.add('hide'); };
+  $('btnPendingDiscard').onclick = async ()=>{
+    const y = await askConfirm('放弃全部 '+pendingCount+' 项暂存更改？','放弃暂存','放弃');
+    if(!y) return;
+    pending = {records:null, accounts:null, pwd:null};
+    persistPending(); updatePendingUI();
+    $('pendingMask').classList.add('hide');
+    await poll();
+    const [acc, rec] = await Promise.all([fetchRawFile(F_ACCOUNTS), fetchRawFile(F_RECORDS)]);
+    if(acc) mergeAccounts(acc);
+    if(rec) mergeRecords(rec);
+    renderAll();
+    toast('已放弃暂存更改');
+  };
 }
 
 // ============================================================
 // 移动端菜单
 // ============================================================
 function toggleMenu(force){
-  const app=$('appView');
+  const app = $('appView');
   const open = force!==undefined ? force : !app.classList.contains('menu-open');
   app.classList.toggle('menu-open', open);
 }
 function closeMenu(){ toggleMenu(false); }
 
 // ============================================================
-// 事件绑定
+// 登录页真实数字（不含姓名）
+// ============================================================
+function renderLoginPreview(){
+  const rs = (S.records||[]).filter(r=>!r.revoked);
+  const [ws, we] = weekRange();
+  const week = rs.filter(r=>inRange(fmtDate(r.record_date), ws, we));
+  const net = rs.reduce((a,r)=>a+(r.score||0),0);
+  const stu = (S.users||[]).filter(u=>u.role==='student').length;
+  const set = (id, v)=>{ const el=$(id); if(el) el.textContent = v; };
+  set('leadWeek', week.length);
+  set('leadStudents', stu);
+  set('leadNet', (net>0?'+':'')+net);
+}
+
+// ============================================================
+// 事件绑定与启动
 // ============================================================
 function bindEvents(){
-  $('btnLogin').onclick=doLogin;
-  $('loginPass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
-  $('btnLogout').onclick=logout;
-  $('btnChgPass').onclick=()=>openChangePass(false);
-  $('btnChangelogOk').onclick=markChangelogSeen;
-  const burger=$('btnBurger'); if(burger) burger.onclick=()=>toggleMenu();
-  const backdrop=$('menuBackdrop'); if(backdrop) backdrop.onclick=()=>closeMenu();
-  const fab=$('pendingFab'); if(fab) fab.onclick=()=>openPendingDialog();
-  document.addEventListener('click', e=>{
-    if(e.target.closest && e.target.closest('.menu-item') && window.innerWidth<=768) closeMenu();
+  $('btnLogin').onclick = doLogin;
+  $('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  $('loginUser').addEventListener('keydown', e=>{ if(e.key==='Enter') $('loginPass').focus(); });
+  $('btnLogout').onclick = ()=>logout(false);
+  $('btnChgPass').onclick = ()=>openChangePass(false);
+  $('btnLock').onclick = async ()=>{
+    if(ghToken){
+      const y = await askConfirm('锁定后本设备需要重新输入写入口令才能录入。','锁定写入','锁定');
+      if(y) lockWrite();
+      return;
+    }
+    if(!isStaff()){ toast('当前账号没有写入权限', true); return; }
+    const ok = await openUnlock();
+    if(ok) toast('写入已解锁');
+  };
+  $('btnBurger').innerHTML = icon('menu', 18);
+  $('btnBurger').onclick = ()=>toggleMenu();
+  $('menuBackdrop').onclick = ()=>closeMenu();
+  $('pendingFab').onclick = ()=>openPendingDialog();
+  $('refreshChip').classList.add('hide');
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape'){
+      const open = document.querySelector('.mask:not(.hide)');
+      if(open && open.id!=='passMask' && open.id!=='unlockMask') open.classList.add('hide');
+      closeMenu();
+    }
   });
 }
-
-// 暂存递交弹窗
-function openPendingDialog(){
-  if(pendingCount===0) return;
-  const list = pendingSummary();
-  $('pendingList').innerHTML = list.map(x=>`<li>${esc(x)}</li>`).join('');
-  $('pendingMask').classList.remove('hide');
-  $('btnPendingOk').onclick=()=>commitPending();
-  $('btnPendingNo').onclick=()=>{ $('pendingMask').classList.add('hide'); };
-  $('btnPendingDiscard').onclick=async()=>{
-    const y=await askConfirm('确定放弃全部 '+pendingCount+' 项暂存更改？');
-    if(!y) return;
-    pending={records:null, accounts:null, pwd:null};
-    persistPending(); updatePendingUI();
-    $('pendingMask').classList.add('hide');
-    // 重新从远端拉取覆盖本地
-    await poll();
-    toast('已放弃暂存更改');
-  };
-}
-
-// ============================================================
-// 启动
-// ============================================================
 function defaultState(){
   return {
     users:[], records:[], audit:[], feedback:[], seen_changelog:{},
     meta:{version:APP_VERSION, semester_start:'2026-09-01', changelog:[]},
-    pwdCache:{}, t:{accounts:'', records:'', feedback:''}
+    pwdCache:{}, t:{accounts:'', records:'', feedback:''},
+    dirtyUsers:new Set(), deletedUsers:new Set()
   };
 }
 function applyLocal(domain, data){
   if(!data || !data.version) return;
-  if(domain==='accounts'){ S.users=data.users||[]; S.seen_changelog=data.seen_changelog||{}; S.meta=data.meta||S.meta; S.t.accounts=data.t||''; }
-  else if(domain==='records'){ S.records=data.records||[]; S.audit=data.audit||[]; S.t.records=data.t||''; }
-  else if(domain==='feedback'){ S.feedback=data.feedback||[]; S.t.feedback=data.t||''; }
+  if(domain==='accounts'){
+    S.users = data.users||[];
+    S.seen_changelog = data.seen_changelog||{};
+    S.meta = Object.assign(S.meta, data.meta||{});
+    S.t.accounts = data.t||'';
+  }else if(domain==='records'){
+    S.records = data.records||[];
+    S.audit = data.audit||[];
+    S.t.records = data.t||'';
+  }else if(domain==='feedback'){
+    S.feedback = data.feedback||[];
+    S.t.feedback = data.t||'';
+  }
 }
 (async function boot(){
   bindEvents();
+  restoreWrite();
   loadPending();
   updatePendingUI();
-  // 1) 本地缓存秒开
+  $('leadVer').textContent = 'v'+APP_VERSION;
+  $('brandMeta').textContent = 'v'+APP_VERSION;
+
   const ca = cacheLoad('accounts'), cr = cacheLoad('records'), cf = cacheLoad('feedback');
   applyLocal('accounts', ca); applyLocal('records', cr); applyLocal('feedback', cf);
   if(ca && cr) lastSavedAt = Math.max(S.t.accounts, S.t.records, S.t.feedback||'');
-  // 2) 远端最新
+  renderLoginPreview();
+
   try{
-    const [acc, rec, fb] = await Promise.all([
-      fetchRawFile(F_ACCOUNTS).then(x=>{ if(x&&x.t&&x.t!==S.t.accounts){ applyLocal('accounts', x); cacheSave('accounts', x);} return x; }),
-      fetchRawFile(F_RECORDS).then(x=>{ if(x&&x.t&&x.t!==S.t.records){ applyLocal('records', x); cacheSave('records', x);} return x; }),
-      fetchRawFile(F_FEEDBACK).then(x=>{ if(x&&x.t&&x.t!==S.t.feedback){ applyLocal('feedback', x); cacheSave('feedback', x);} return x; })
-    ]);
-    if(acc||rec) lastSavedAt = Math.max(S.t.accounts, S.t.records, S.t.feedback||'');
-  }catch(e){}
-  // 3) 无数据兜底
-  if(!S.users.length && !S.records.length){
-    S = defaultState();
+    const [acc, rec, fb] = await Promise.all([fetchRawFile(F_ACCOUNTS), fetchRawFile(F_RECORDS), fetchRawFile(F_FEEDBACK)]);
+    if(acc && acc.t && acc.t!==S.t.accounts){ applyLocal('accounts', acc); cacheSave('accounts', acc); }
+    if(rec && rec.t && rec.t!==S.t.records){ applyLocal('records', rec); cacheSave('records', rec); }
+    if(fb && fb.t && fb.t!==S.t.feedback){ applyLocal('feedback', fb); cacheSave('feedback', fb); }
+    if(acc || rec) lastSavedAt = Math.max(S.t.accounts||'', S.t.records||'', S.t.feedback||'');
+  }catch(e){ /* 离线时用缓存 */ }
+
+  if(!S.users.length && !S.records.length) S = defaultState();
+  renderLoginPreview();
+
+  if(!restoreSession()){
+    $('loginView').classList.remove('hide');
+    $('appView').classList.add('hide');
+  }else{
+    startPolling();
   }
-  restoreSession();
-  startPolling();
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && me) startPolling(); });
 })();

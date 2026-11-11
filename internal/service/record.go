@@ -40,8 +40,28 @@ func (s *RecordService) BatchCreate(in BatchCreateInput) ([]model.DeductionRecor
 	if len(in.TargetUserIDs) == 0 {
 		return nil, errcode.ErrNoTargetUser
 	}
+	if len(in.TargetUserIDs) > 200 {
+		return nil, errcode.New(30006, "一次最多录入 200 人", 400)
+	}
 	if in.Category == "" {
 		return nil, errcode.ErrCategoryEmpty
+	}
+	// 类别白名单：不接受自造类别
+	if !validCategory(in.Category) {
+		return nil, errcode.New(30005, "无效的类别", 400)
+	}
+	// 分值：扣分类别必须为负、加分类别必须为正，绝对值 1 到 50
+	if in.Score == 0 || in.Score < -50 || in.Score > 50 {
+		return nil, errcode.New(30007, "分值需在 1 到 50 之间", 400)
+	}
+	if in.Category == model.CategoryBonus && in.Score < 0 {
+		return nil, errcode.New(30008, "加分记录的分值必须为正数", 400)
+	}
+	if in.Category != model.CategoryBonus && in.Score > 0 {
+		return nil, errcode.New(30009, "扣分记录的分值必须为负数", 400)
+	}
+	if len([]rune(in.SubjectOrItem)) > 40 || len([]rune(in.Reason)) > 200 {
+		return nil, errcode.New(30010, "项目或原因过长", 400)
 	}
 
 	var recordDate time.Time
@@ -50,13 +70,17 @@ func (s *RecordService) BatchCreate(in BatchCreateInput) ([]model.DeductionRecor
 		if err != nil {
 			return nil, errcode.ErrBadRequest
 		}
+		if t.After(time.Now().Add(24 * time.Hour)) {
+			return nil, errcode.New(30011, "记录日期不能晚于今天", 400)
+		}
 		recordDate = t
 	} else {
 		recordDate = time.Now()
 	}
 
+	// 只能给学生记分
 	var students []model.User
-	if err := s.db.Where("id IN ?", in.TargetUserIDs).Find(&students).Error; err != nil {
+	if err := s.db.Where("id IN ? AND role = ?", in.TargetUserIDs, model.RoleStudent).Find(&students).Error; err != nil {
 		return nil, errcode.ErrInternal
 	}
 	nameMap := make(map[int64]string, len(students))

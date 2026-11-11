@@ -1,8 +1,10 @@
 package router
 
 import (
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"class-deduction/config"
 	"class-deduction/internal/handler"
@@ -175,6 +177,10 @@ func serveStatic(r *gin.Engine) {
 	if staticDir == "" {
 		return // 没有找到前端目录，跳过
 	}
+	absStatic, err := filepath.Abs(staticDir)
+	if err != nil {
+		return
+	}
 	// 服务静态资源（css, js, assets）
 	r.Use(func(c *gin.Context) {
 		// 只处理非 API 请求
@@ -183,15 +189,23 @@ func serveStatic(r *gin.Engine) {
 			c.Next()
 			return
 		}
-		// 尝试提供文件
-		filePath := filepath.Join(staticDir, path)
-		if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
-			c.File(filePath)
-			c.Abort()
+		// 规范化请求路径，禁止 ../ 与隐藏文件，防止目录穿越
+		clean := filepath.FromSlash(filepath.Clean("/" + path))
+		if strings.HasPrefix(clean, string(os.PathSeparator)+".") ||
+			strings.Contains(clean, string(os.PathSeparator)+"."+string(os.PathSeparator)) {
+			c.AbortWithStatus(http.StatusNotFound)
 			return
 		}
+		filePath, err := filepath.Abs(filepath.Join(absStatic, clean))
+		if err == nil && strings.HasPrefix(filePath, absStatic+string(os.PathSeparator)) {
+			if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
+				c.File(filePath)
+				c.Abort()
+				return
+			}
+		}
 		// SPA 回退：所有未匹配的路由返回 index.html
-		indexPath := filepath.Join(staticDir, "index.html")
+		indexPath := filepath.Join(absStatic, "index.html")
 		if _, err := os.Stat(indexPath); err == nil {
 			c.File(indexPath)
 			c.Abort()

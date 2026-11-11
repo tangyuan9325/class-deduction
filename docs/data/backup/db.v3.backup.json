@@ -20,7 +20,7 @@
   {
    "id": 1,
    "username": "admin",
-   "pass": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+   "pass": "",
    "real_name": "管理员",
    "role": "admin",
    "class_id": 0,
@@ -30,7 +30,7 @@
   {
    "id": 2,
    "username": "banzhuren",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "崔孝禹",
    "role": "teacher",
    "class_id": 1,
@@ -40,7 +40,7 @@
   {
    "id": 3,
    "username": "kandban",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "班级看板",
    "role": "viewer",
    "class_id": 1,
@@ -50,7 +50,7 @@
   {
    "id": 4,
    "username": "stu02",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "葛姝玲",
    "role": "student",
    "class_id": 1,
@@ -60,7 +60,7 @@
   {
    "id": 5,
    "username": "stu03",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "李知远",
    "role": "student",
    "class_id": 1,
@@ -70,7 +70,7 @@
   {
    "id": 6,
    "username": "stu04",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "凌家玺",
    "role": "student",
    "class_id": 1,
@@ -80,7 +80,7 @@
   {
    "id": 7,
    "username": "stu06",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "吴孜阳",
    "role": "student",
    "class_id": 1,
@@ -90,7 +90,7 @@
   {
    "id": 8,
    "username": "stu07",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "应沁晏",
    "role": "student",
    "class_id": 1,
@@ -102,7 +102,7 @@
   {
    "id": 9,
    "username": "stu08",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "于欣冉",
    "role": "student",
    "class_id": 1,
@@ -112,7 +112,7 @@
   {
    "id": 10,
    "username": "stu09",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "张千慧",
    "role": "student",
    "class_id": 1,
@@ -122,7 +122,7 @@
   {
    "id": 11,
    "username": "stu11",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "陈若铭",
    "role": "student",
    "class_id": 1,
@@ -132,7 +132,7 @@
   {
    "id": 12,
    "username": "stu12",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "程泽航",
    "role": "student",
    "class_id": 1,
@@ -142,7 +142,7 @@
   {
    "id": 13,
    "username": "stu13",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "翟振滔",
    "role": "student",
    "class_id": 1,
@@ -152,7 +152,7 @@
   {
    "id": 14,
    "username": "stu14",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "高歌",
    "role": "student",
    "class_id": 1,
@@ -162,7 +162,7 @@
   {
    "id": 15,
    "username": "stu15",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "胡博文",
    "role": "student",
    "class_id": 1,
@@ -172,7 +172,7 @@
   {
    "id": 16,
    "username": "stu16",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "胡哲源",
    "role": "student",
    "class_id": 1,
@@ -182,7 +182,7 @@
   {
    "id": 17,
    "username": "stu17",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "黄渝翔",
    "role": "student",
    "class_id": 1,
@@ -194,7 +194,7 @@
   {
    "id": 18,
    "username": "stu18",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "赖泓哲",
    "role": "student",
    "class_id": 1,
@@ -204,7 +204,7 @@
   {
    "id": 19,
    "username": "stu19",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "李成圆",
    "role": "student",
    "class_id": 1,
@@ -214,7 +214,7 @@
   {
    "id": 20,
    "username": "stu20",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "李乙禾",
    "role": "student",
    "class_id": 1,
@@ -224,7 +224,7 @@
   {
    "id": 21,
    "username": "stu21",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "厉益和",
    "role": "student",
    "class_id": 1,
@@ -234,7 +234,7 @@
   {
    "id": 22,
    "username": "stu22",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "刘炫华",
    "role": "student",
    "class_id": 1,
@@ -244,7 +244,7 @@
   {
    "id": 23,
    "username": "stu23",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "毛林轩",
    "role": "student",
    "class_id": 1,
@@ -254,7 +254,7 @@
   {
    "id": 24,
    "username": "stu24",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "沙宇桐",
    "role": "student",
    "class_id": 1,
@@ -264,7 +264,7 @@
   {
    "id": 25,
    "username": "stu25",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "沈嘉泽",
    "role": "student",
    "class_id": 1,
@@ -274,7 +274,7 @@
   {
    "id": 26,
    "username": "stu26",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "施浩哲",
    "role": "student",
    "class_id": 1,
@@ -286,7 +286,7 @@
   {
    "id": 27,
    "username": "stu27",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "汤睿逸",
    "role": "student",
    "class_id": 1,
@@ -296,7 +296,7 @@
   {
    "id": 28,
    "username": "stu28",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "汪楚航",
    "role": "student",
    "class_id": 1,
@@ -306,7 +306,7 @@
   {
    "id": 29,
    "username": "stu29",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "汪子涵",
    "role": "student",
    "class_id": 1,
@@ -316,7 +316,7 @@
   {
    "id": 30,
    "username": "stu30",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "王浩然",
    "role": "student",
    "class_id": 1,
@@ -326,7 +326,7 @@
   {
    "id": 31,
    "username": "stu31",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "翁境朗",
    "role": "student",
    "class_id": 1,
@@ -338,7 +338,7 @@
   {
    "id": 32,
    "username": "stu32",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "邬茗浩",
    "role": "student",
    "class_id": 1,
@@ -348,7 +348,7 @@
   {
    "id": 33,
    "username": "stu33",
-   "pass": "8ed9c86d01ae30bfd9145e5edaf7c0331a9283e5ec43bec643a23863849542bc",
+   "pass": "",
    "real_name": "徐绅源",
    "role": "student",
    "class_id": 1,
@@ -360,7 +360,7 @@
   {
    "id": 34,
    "username": "stu34",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "严佳辉",
    "role": "student",
    "class_id": 1,
@@ -373,7 +373,7 @@
   {
    "id": 35,
    "username": "stu35",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "尤顺",
    "role": "student",
    "class_id": 1,
@@ -385,7 +385,7 @@
   {
    "id": 36,
    "username": "stu36",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "詹天铭",
    "role": "student",
    "class_id": 1,
@@ -395,7 +395,7 @@
   {
    "id": 37,
    "username": "stu37",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "张浩然",
    "role": "student",
    "class_id": 1,
@@ -405,7 +405,7 @@
   {
    "id": 38,
    "username": "stu38",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "赵潼鑫",
    "role": "student",
    "class_id": 1,
@@ -423,7 +423,7 @@
   {
    "id": 39,
    "username": "stu39",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "郑子晨",
    "role": "student",
    "class_id": 1,
@@ -433,7 +433,7 @@
   {
    "id": 40,
    "username": "stu40",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "朱颂喆",
    "role": "student",
    "class_id": 1,
@@ -443,7 +443,7 @@
   {
    "id": 41,
    "username": "stu41",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "朱彦奇",
    "role": "student",
    "class_id": 1,
@@ -453,7 +453,7 @@
   {
    "id": 42,
    "username": "stu42",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "朱梓昊",
    "role": "student",
    "class_id": 1,
@@ -463,7 +463,7 @@
   {
    "id": 43,
    "username": "stu43",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "徐雨辰",
    "role": "student",
    "class_id": 1,
@@ -473,7 +473,7 @@
   {
    "id": 44,
    "username": "stu44",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "杨天雪",
    "role": "student",
    "class_id": 1,
@@ -483,7 +483,7 @@
   {
    "id": 45,
    "username": "stu45",
-   "pass": "d1f50a53f5d28588b74b9cdb53f1ae7b990e17c422c8c64a088ac492ec141536",
+   "pass": "",
    "real_name": "方高博",
    "role": "student",
    "class_id": 1,
@@ -493,7 +493,7 @@
   {
    "id": 46,
    "username": "stu46",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "殷俊逸",
    "role": "student",
    "class_id": 1,
@@ -503,7 +503,7 @@
   {
    "id": 47,
    "username": "stu47",
-   "pass": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+   "pass": "",
    "real_name": "张宇翔",
    "role": "student",
    "class_id": 1,
@@ -578,5 +578,6 @@
    "好人好事",
    "其它加分"
   ]
- }
+ },
+ "_note": "v1.4.20261111 安全清理：移除本文件中已废弃的无盐 SHA-256 口令散列，其余数据保持不变"
 }

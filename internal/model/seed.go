@@ -38,9 +38,10 @@ func initAdmin(db *gorm.DB) error {
 		return nil
 	}
 	admin := User{
-		Username: "admin",
-		RealName: "系统管理员",
-		Role:     RoleAdmin,
+		Username:           "admin",
+		RealName:           "系统管理员",
+		Role:               RoleAdmin,
+		MustChangePassword: true, // 默认口令只用于首次进入，登录后强制修改
 	}
 	if err := admin.SetPassword("admin123"); err != nil {
 		return err
@@ -60,10 +61,11 @@ func initHeadTeacher(db *gorm.DB) error {
 		return nil
 	}
 	ht := User{
-		Username: "banzhuren",
-		RealName: "崔孝禹",
-		Role:     RoleTeacher,
-		ClassID:  1,
+		Username:           "banzhuren",
+		RealName:           "崔孝禹",
+		Role:               RoleTeacher,
+		ClassID:            1,
+		MustChangePassword: true,
 	}
 	if err := ht.SetPassword("123456"); err != nil {
 		return err
@@ -83,10 +85,11 @@ func initViewer(db *gorm.DB) error {
 		return nil
 	}
 	v := User{
-		Username: "kandban",
-		RealName: "班级看板",
-		Role:     RoleViewer,
-		ClassID:  1,
+		Username:           "kandban",
+		RealName:           "班级看板",
+		Role:               RoleViewer,
+		ClassID:            1,
+		MustChangePassword: true,
 	}
 	if err := v.SetPassword("123456"); err != nil {
 		return err
