@@ -884,8 +884,14 @@ function nav(key){
   }
   curView = key;
   renderMenu();
-  renderView();
+  renderViewSafe();
   closeMenu();
+}
+// views.js 与 app.js 并行解析，首屏可能在视图函数就绪前触发渲染，这里做一次等待
+function renderViewSafe(){
+  if(typeof renderView === 'function'){ renderView(); return; }
+  if(renderViewSafe._t) return;
+  renderViewSafe._t = setTimeout(()=>{ renderViewSafe._t = 0; renderViewSafe(); }, 40);
 }
 function renderMenu(){
   const menu = $('menu');
@@ -909,7 +915,7 @@ function renderMenu(){
 }
 function renderAll(){
   renderMenu();
-  renderView();
+  renderViewSafe();
   updateSyncLabel();
   updatePendingUI();
 }
