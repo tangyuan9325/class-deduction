@@ -297,7 +297,14 @@ function canRevoke(){
   const p = me.permissions || [];
   return ALL_CATS.some(c=>p.includes(c));
 }
-function canWrite(){ return isStaff() && !!ghToken; }
+// 能写入的角色口径：管理员、老师，或被授予任意录入类别的学生
+function canUnlockWrite(){
+  if(!me) return false;
+  if(isAdmin() || isTeacher()) return true;
+  if(isViewer()) return false;
+  return ALL_CATS.some(c=>canEnter(me.role, c));
+}
+function canWrite(){ return canUnlockWrite() && !!ghToken; }
 function roleText(r){ return {admin:'管理员',teacher:'老师',student:'学生',viewer:'看板'}[r]||r; }
 
 // ============================================================
@@ -326,7 +333,7 @@ function assertWritablePath(p){
   if(p!=='docs/data' && !p.startsWith('docs/data/')) throw new Error('非法的写入路径');
 }
 function guardWrite(){
-  if(!isStaff()) throw new Error('当前账号没有写入权限');
+  if(!canUnlockWrite()) throw new Error('该账号未被授予录入权限');
   if(!ghToken) throw new Error('WRITE_LOCKED');
   const now = Date.now();
   writeTimes = writeTimes.filter(t=>now-t < 3600000);
@@ -855,7 +862,7 @@ function openUnlock(){
   });
 }
 async function ensureUnlocked(){
-  if(!isStaff()){ toast('当前账号没有写入权限', true); return false; }
+  if(!canUnlockWrite()){ toast('该账号未被授予录入权限', true); return false; }
   if(ghToken) return true;
   const ok = await openUnlock();
   return !!ok;
@@ -1105,7 +1112,7 @@ function bindEvents(){
       if(y) lockWrite();
       return;
     }
-    if(!isStaff()){ toast('当前账号没有写入权限', true); return; }
+    if(!canUnlockWrite()){ toast('该账号未被授予录入权限', true); return; }
     const ok = await openUnlock();
     if(ok) toast('写入已解锁');
   };
