@@ -19,9 +19,12 @@ if (!/^github_pat_[A-Za-z0-9_]+$|^ghp_[A-Za-z0-9]+$/.test(token)) {
   console.error('令牌格式不正确');
   process.exit(1);
 }
-if (pass.length < 12) {
-  console.error('口令至少 12 位');
+if (pass.length < 8) {
+  console.error('口令至少 8 位');
   process.exit(1);
+}
+if (pass.length < 12) {
+  console.warn('提示：口令短于 12 位，建议改用更长的随机串');
 }
 
 const ITER = 600000;
