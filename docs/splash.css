@@ -1,0 +1,84 @@
+/* ============================================================
+   入场仪式 · Splash
+   棕褐 #5C3D28 → #7A5236 · 奶白 #FDF8F2 · 金 #D4A24C / 高光 #F0C97A
+   仅使用 transform / opacity / filter，保证合成层动画
+   ============================================================ */
+
+#splash{
+  position:fixed; inset:0; z-index:300;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:
+    radial-gradient(120% 100% at 50% 36%, #7A5236 0%, #5C3D28 58%, #4A3020 100%);
+  color:#FDF8F2; overflow:hidden;
+  will-change:opacity;
+}
+#splash.is-gone{display:none}
+
+/* Phase 0：中心金色光晕 */
+.splash-glow{
+  position:absolute; left:50%; top:42%; width:560px; height:560px; margin:-280px 0 0 -280px;
+  border-radius:50%; opacity:0; pointer-events:none;
+  background:radial-gradient(circle,
+    rgba(212,162,76,.46) 0%,
+    rgba(212,162,76,.16) 38%,
+    rgba(212,162,76,.05) 58%,
+    transparent 72%);
+  filter:blur(4px);
+}
+
+.splash-stage{position:relative; display:flex; align-items:center; justify-content:center}
+
+/* Phase 1 / 3 作用层：整组 Logo 的位置与缩放 */
+#splashLogo{position:relative; width:88px; height:88px; will-change:transform}
+#splashLogo svg{display:block; width:100%; height:100%; overflow:visible; transform-origin:50% 50%}
+#splashLogo [data-bar]{transform-box:fill-box; transform-origin:50% 100%}
+#splashLogo .splash-dot{transform-box:fill-box; transform-origin:50% 50%}
+
+/* Phase 2：金色细环光波 */
+.splash-halo{
+  position:absolute; left:50%; top:50%; width:112px; height:112px; margin:-56px 0 0 -56px;
+  border-radius:50%; border:1px solid rgba(212,162,76,.85); opacity:0; pointer-events:none;
+  box-shadow:0 0 18px rgba(212,162,76,.22);
+}
+
+.splash-word{
+  position:relative; margin-top:26px; opacity:0;
+  font-family:var(--serif); font-size:15px; letter-spacing:.34em; text-indent:.34em;
+  color:rgba(253,248,242,.86);
+}
+.splash-sub{
+  position:relative; margin-top:9px; opacity:0;
+  font-family:var(--mono); font-size:9px; letter-spacing:.3em; text-indent:.3em;
+  color:rgba(240,201,122,.62);
+}
+
+#splashSkip{
+  position:absolute; right:22px; bottom:20px;
+  font-size:12px; line-height:1; padding:7px 13px; border-radius:999px;
+  color:rgba(253,248,242,.62); border:1px solid rgba(253,248,242,.24);
+  background:transparent; cursor:pointer;
+  transition:color .15s ease, border-color .15s ease, background-color .15s ease;
+}
+#splashSkip:hover{color:#FDF8F2; border-color:rgba(253,248,242,.5); background:rgba(253,248,242,.06)}
+
+/* Phase 4：主内容呼吸式渐显（JS 打点，逐块 80ms 错峰） */
+.rv{
+  opacity:0; transform:translateY(24px); filter:blur(8px);
+  animation:rvIn .8s cubic-bezier(.22,1,.36,1) forwards;
+  animation-delay:calc(var(--rv-i,0) * 80ms);
+  will-change:opacity,transform,filter;
+}
+@keyframes rvIn{ to{ opacity:1; transform:none; filter:blur(0) } }
+
+body.splash-on{ background:#5C3D28; overflow:hidden }
+
+@media (max-width:640px){
+  #splashLogo{width:72px; height:72px}
+  .splash-glow{width:420px; height:420px; margin:-210px 0 0 -210px}
+  .splash-word{font-size:13.5px; letter-spacing:.28em; text-indent:.28em}
+  #splashSkip{right:16px; bottom:16px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .rv{ animation:none; opacity:1; transform:none; filter:none }
+}

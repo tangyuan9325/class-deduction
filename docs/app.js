@@ -22,7 +22,7 @@ const SYNC = {
   rawBase: 'https://raw.githubusercontent.com',
   maxWritesPerHour: 40
 };
-const APP_VERSION = '1.4.20261111';
+const APP_VERSION = '1.4.20261112';
 const DB_VERSION = 5;
 const PBKDF2_ITER = 600000;
 const F_ACCOUNTS = `${SYNC.dataDir}/accounts.json`;
@@ -31,16 +31,14 @@ const F_FEEDBACK = `${SYNC.dataDir}/feedback.json`;
 const pwdPath = uname => `${SYNC.dataDir}/users/${uname}/pwd.json`;
 
 const RELEASE_NOTES = [
-  '写入安全升级：仓库内的 GitHub 写令牌改为 AES-GCM 密文，需输入写入口令才能解锁，公开源码不再包含可用凭据',
-  '页面全面重做：记分册视觉，宋体标题、纸墨配色、表格化数字，去掉渐变、发光与表情符号',
-  '导航改为线性图标，侧栏 34px 行高对齐，移动端抽屉重做',
-  '看板改为一张主图表：近 14 天净分，今日用靛色标出，其余为中性色',
-  '修复递交后提示永远显示「共 0 项」的问题',
-  '修复并发写入时后写覆盖先写、可能丢失他人账号修改的问题',
-  '修复轮询同步每 8 秒重绘页面、导致正在输入的内容与勾选丢失的问题',
-  '修复密码为 123456 等弱口令仍可设置、登录错误提示可枚举账号的问题',
-  '修复扣分记录缺字段时页面崩溃、CSV 导出加号被识别为公式的问题',
-  '增加内容安全策略（CSP）、写入频率限制与路径白名单'
+  '新徽标：七根白条组成冠形刻度，顶端一枚金点，缩小到 32 像素仍可辨认',
+  '入场仪式：白条错峰飞入、金点落定、金环扩散，徽标归位到品牌位置后内容逐块渐显',
+  '跳过与记忆：任意点击或按键即可跳过；同一次会话再次打开只播放精简版',
+  '登录页改为棕褐书院色调，奶白登录卡与金色强调，与入场画面无缝衔接',
+  '标签页图标、手机主屏图标与页面徽标统一为同一套矢量图形',
+  '尊重系统「减少动效」设置：关闭飞入，只保留 300 毫秒淡入',
+  '学习类扣分统一为 -2 分，选择科目自动带出「作业未交」备注',
+  '保留上一版的写入安全、并发合并、弱口令与导出校验等修复'
 ];
 
 // 扣分/加分类别字典
@@ -762,6 +760,7 @@ async function doLogin(){
   }
   $('loginView').classList.add('hide');
   $('appView').classList.remove('hide');
+  document.body.classList.remove('login-mode');
   curView = canViewStats() ? 'dashboard' : 'personal';
   renderAll();
   // 首次登录优先设置密码，更新日志放到之后
@@ -784,6 +783,7 @@ function doLogout(){
   lockWrite(true);
   $('appView').classList.add('hide');
   $('loginView').classList.remove('hide');
+  document.body.classList.add('login-mode');
   $('loginPass').value = '';
 }
 function restoreSession(){
@@ -794,6 +794,7 @@ function restoreSession(){
   me = {id:u.id, username:u.username, real_name:u.real_name, role:u.role, permissions:u.permissions||[], remember:!!sv.remember};
   $('loginView').classList.add('hide');
   $('appView').classList.remove('hide');
+  document.body.classList.remove('login-mode');
   curView = canViewStats() ? 'dashboard' : 'personal';
   renderAll();
   return true;
@@ -1271,6 +1272,7 @@ function applyLocal(domain, data){
   }
 }
 (async function boot(){
+  document.body.classList.add('login-mode');
   bindEvents();
   restoreWrite();
   loadPending();

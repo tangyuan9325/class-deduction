@@ -1,14 +1,18 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="splash-boot">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<meta name="theme-color" content="#f7f4ee">
+<meta name="theme-color" content="#5C3D28">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com https://raw.githubusercontent.com https://tangyuan9325.github.io; object-src 'none'; base-uri 'none'; form-action 'none';">
+<style>html.splash-boot{background:#5C3D28}html.splash-boot body{background:#5C3D28;overflow:hidden}</style>
 <title>班级量化考核</title>
-<link rel="icon" href="favicon.svg?v=1.4.20261111-r100" type="image/svg+xml">
+<link rel="icon" href="favicon.svg?v=1.4.20261112-r101" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png?v=1.4.20261112-r101" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1.4.20261112-r101" sizes="180x180">
+<link rel="stylesheet" href="splash.css?v=1.4.20261112-r101">
 <meta name="description" content="班级扣分与加分记录，班主任录入，学生和家长随时查看。">
 <style>
 /* ============================================================
@@ -374,20 +378,89 @@ td.pos{color:var(--bonus)}
 @media(prefers-reduced-motion:reduce){
   *{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+/* ---------- 品牌：书院棕金 ---------- */
+.mark{width:32px;height:32px;display:block;border-radius:8px}
+.markline{gap:12px}
+.markline b{letter-spacing:.05em}
+body.login-mode{
+  background:radial-gradient(120% 100% at 50% 6%,#7A5236 0%,#5C3D28 54%,#452C1D 100%) fixed,#5C3D28;
+}
+body.login-mode #loginView{color:#FDF8F2}
+body.login-mode #loginView h1,
+body.login-mode #loginView .markline b{color:#FDF8F2}
+body.login-mode #loginView h1 span{color:#F0C97A}
+body.login-mode #loginView p{color:rgba(253,248,242,.74)}
+body.login-mode #loginView .lead-stats{border-top-color:rgba(255,255,255,.16)}
+body.login-mode #loginView .lead-stat{border-right-color:rgba(255,255,255,.12)}
+body.login-mode #loginView .lead-stat .k{color:rgba(253,248,242,.55)}
+body.login-mode #loginView .lead-stat .v{color:#FDF8F2}
+body.login-mode #loginView .lead-foot{color:rgba(253,248,242,.42)}
+body.login-mode .login-card{
+  background:#FDF8F2;border-color:rgba(255,255,255,.16);
+  box-shadow:0 2px 4px rgba(40,24,12,.18),0 28px 64px -34px rgba(20,12,6,.75);
+}
+body.login-mode .login-card h2{color:#2A2018}
+body.login-mode .login-card .cap{color:#7B6A58}
+body.login-mode .login-card .fld>label{color:#5E5044}
+body.login-mode .login-card input{background:#FFFDF9;border-color:rgba(92,61,40,.2);color:#2A2018}
+body.login-mode .login-card .checkline{color:#5E5044}
+body.login-mode .login-card .login-tip{color:#8B7965}
+body.login-mode .login-card .net-line .net-text{color:#7B6A58}
 </style>
 </head>
 <body>
+
+<!-- ========== 入场仪式：Phase 0-4 见 splash.js ========== -->
+<div id="splash" role="presentation">
+  <div class="splash-glow"></div>
+  <div class="splash-stage">
+    <div id="splashLogo">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="#5C3D28"/>
+        <circle cx="32" cy="32" r="29" fill="none" stroke="#FFFFFF" stroke-opacity=".22" stroke-width="1.2"/>
+        <g fill="#FFFFFF">
+          <rect data-bar="1" x="12" y="34" width="4" height="18" rx="2"/>
+          <rect data-bar="2" x="18" y="27" width="4" height="25" rx="2"/>
+          <rect data-bar="3" x="24" y="20" width="4" height="32" rx="2"/>
+          <rect data-bar="4" x="30" y="12" width="4" height="40" rx="2"/>
+          <rect data-bar="5" x="36" y="20" width="4" height="32" rx="2"/>
+          <rect data-bar="6" x="42" y="27" width="4" height="25" rx="2"/>
+          <rect data-bar="7" x="48" y="34" width="4" height="18" rx="2"/>
+        </g>
+        <g fill="#5C3D28" opacity=".22">
+          <rect x="24.8" y="25" width="2.4" height=".7" rx=".35"/><rect x="24.8" y="30" width="2.4" height=".7" rx=".35"/>
+          <rect x="24.8" y="35" width="2.4" height=".7" rx=".35"/><rect x="24.8" y="40" width="2.4" height=".7" rx=".35"/>
+          <rect x="24.8" y="45" width="2.4" height=".7" rx=".35"/>
+          <rect x="30.8" y="17" width="2.4" height=".7" rx=".35"/><rect x="30.8" y="22" width="2.4" height=".7" rx=".35"/>
+          <rect x="30.8" y="27" width="2.4" height=".7" rx=".35"/><rect x="30.8" y="32" width="2.4" height=".7" rx=".35"/>
+          <rect x="30.8" y="37" width="2.4" height=".7" rx=".35"/><rect x="30.8" y="42" width="2.4" height=".7" rx=".35"/>
+          <rect x="30.8" y="47" width="2.4" height=".7" rx=".35"/>
+          <rect x="36.8" y="25" width="2.4" height=".7" rx=".35"/><rect x="36.8" y="30" width="2.4" height=".7" rx=".35"/>
+          <rect x="36.8" y="35" width="2.4" height=".7" rx=".35"/><rect x="36.8" y="40" width="2.4" height=".7" rx=".35"/>
+          <rect x="36.8" y="45" width="2.4" height=".7" rx=".35"/>
+        </g>
+        <rect class="splash-base" x="10" y="52" width="44" height="2.6" rx="1.3" fill="#FFFFFF"/>
+        <circle class="splash-base" cx="9.2" cy="53.3" r="1.6" fill="#D4A24C"/>
+        <circle class="splash-base" cx="54.8" cy="53.3" r="1.6" fill="#D4A24C"/>
+        <g class="splash-dot">
+          <circle cx="32" cy="8.5" r="2.6" fill="#D4A24C"/>
+          <circle cx="31.3" cy="7.8" r="1.1" fill="#F0C97A" opacity=".6"/>
+        </g>
+      </svg>
+    </div>
+    <div class="splash-halo"></div>
+  </div>
+  <div class="splash-word">班级量化考核</div>
+  <div class="splash-sub">CLASS MERIT RECORD</div>
+  <button id="splashSkip" type="button">跳过</button>
+</div>
 
 <!-- 登录 -->
 <div id="loginView">
   <div class="login-lead">
     <div class="markline">
-      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="2" y="2" width="9" height="9" rx="1.5" fill="#1f1b16"/>
-        <rect x="13" y="2" width="9" height="9" rx="1.5" fill="none" stroke="#1f1b16" stroke-width="1.5"/>
-        <rect x="2" y="13" width="9" height="9" rx="1.5" fill="none" stroke="#1f1b16" stroke-width="1.5"/>
-        <rect x="13" y="13" width="9" height="9" rx="1.5" fill="#2b4a63"/>
-      </svg>
+      <img class="mark" src="logo.svg?v=1.4.20261112-r101" width="32" height="32" alt="班级量化考核">
       <b>班级量化考核</b>
     </div>
     <h1>每一次扣分与加分<br>都记在<span>册</span>上</h1>
@@ -397,7 +470,7 @@ td.pos{color:var(--bonus)}
       <div class="lead-stat"><div class="k">在册学生</div><div class="v" id="leadStudents">—</div></div>
       <div class="lead-stat"><div class="k">本学期净分</div><div class="v" id="leadNet">—</div></div>
     </div>
-    <div class="lead-foot" id="leadVer">v1.4.20261111</div>
+    <div class="lead-foot" id="leadVer">v1.4.20261112</div>
   </div>
 
   <div class="login-card">
@@ -429,15 +502,10 @@ td.pos{color:var(--bonus)}
   <div id="menuBackdrop"></div>
   <aside class="side">
     <div class="brand">
-      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="2" y="2" width="9" height="9" rx="1.5" fill="#1f1b16"/>
-        <rect x="13" y="2" width="9" height="9" rx="1.5" fill="none" stroke="#1f1b16" stroke-width="1.5"/>
-        <rect x="2" y="13" width="9" height="9" rx="1.5" fill="none" stroke="#1f1b16" stroke-width="1.5"/>
-        <rect x="13" y="13" width="9" height="9" rx="1.5" fill="#2b4a63"/>
-      </svg>
+      <img class="mark" src="logo.svg?v=1.4.20261112-r101" width="32" height="32" alt="">
       <div>
         <div class="brand-name">班级量化考核</div>
-        <div class="brand-meta" id="brandMeta">v1.4.20261111</div>
+        <div class="brand-meta" id="brandMeta">v1.4.20261112</div>
       </div>
       <button class="side-toggle" id="btnSideToggle" type="button" title="收起侧边栏" aria-label="收起侧边栏" aria-pressed="false">
         <svg class="i" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -466,7 +534,7 @@ td.pos{color:var(--bonus)}
 <!-- 更新日志 -->
 <div id="changelogMask" class="mask hide">
   <div class="dialog">
-    <h3 id="changelogTitle">更新到 v1.4.20261111</h3>
+    <h3 id="changelogTitle">更新到 v1.4.20261112</h3>
     <div class="dsub">本次更新内容</div>
     <ul class="notes" id="changelogList"></ul>
     <div class="dlg-btns"><button class="btn" id="btnChangelogOk">知道了</button></div>
@@ -531,8 +599,9 @@ td.pos{color:var(--bonus)}
 <div id="refreshChip" class="hide"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="gh-token.js?v=1.4.20261111-r100"></script>
-<script src="app.js?v=1.4.20261111-r100"></script>
-<script src="views.js?v=1.4.20261111-r100"></script>
+<script src="splash.js?v=1.4.20261112-r101"></script>
+<script src="gh-token.js?v=1.4.20261112-r101"></script>
+<script src="app.js?v=1.4.20261112-r101"></script>
+<script src="views.js?v=1.4.20261112-r101"></script>
 </body>
 </html>
