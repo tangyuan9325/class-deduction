@@ -1,36 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="班级量化考核">
-  <!-- 徽章底：棕褐书院色 -->
-  <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="#5C3D28"/>
-  <!-- 内圈细描边（白色 22%） -->
-  <circle cx="32" cy="32" r="29" fill="none" stroke="#FFFFFF" stroke-opacity=".22" stroke-width="1.2"/>
-  <!-- 七根白条：高度 18/25/32/40/32/25/18，条宽 4，间距 2，圆角 2 -->
-  <g fill="#FFFFFF">
-    <rect data-bar="1" x="12" y="34" width="4" height="18" rx="2"/>
-    <rect data-bar="2" x="18" y="27" width="4" height="25" rx="2"/>
-    <rect data-bar="3" x="24" y="20" width="4" height="32" rx="2"/>
-    <rect data-bar="4" x="30" y="12" width="4" height="40" rx="2"/>
-    <rect data-bar="5" x="36" y="20" width="4" height="32" rx="2"/>
-    <rect data-bar="6" x="42" y="27" width="4" height="25" rx="2"/>
-    <rect data-bar="7" x="48" y="34" width="4" height="18" rx="2"/>
+  <!-- 印面：墨色圆角方，呼应"记账盖印" -->
+  <rect x="1.5" y="1.5" width="61" height="61" rx="15" fill="#1f1b16"/>
+  <!-- 内圈细描边（纸色 18%） -->
+  <circle cx="32" cy="32" r="28.4" fill="none" stroke="#f7f4ee" stroke-opacity=".18" stroke-width="1.1"/>
+  <!-- 七根刻度条：高 18/25/32/40/32/25/18，条宽 4 间距 2，冠形排布 -->
+  <g fill="#f7f4ee">
+    <rect data-bar="1" x="12" y="33.4" width="4" height="18" rx="2.0"/>
+    <rect data-bar="2" x="18" y="26.4" width="4" height="25" rx="2.0"/>
+    <rect data-bar="3" x="24" y="19.4" width="4" height="32" rx="2.0"/>
+    <rect data-bar="4" x="30" y="11.4" width="4" height="40" rx="2.0"/>
+    <rect data-bar="5" x="36" y="19.4" width="4" height="32" rx="2.0"/>
+    <rect data-bar="6" x="42" y="26.4" width="4" height="25" rx="2.0"/>
+    <rect data-bar="7" x="48" y="33.4" width="4" height="18" rx="2.0"/>
   </g>
-  <!-- 刻痕：中间三根条内的浅色小刻度（4.6 单位 ≈ 2px @ 32 显示） -->
-  <g fill="#5C3D28" opacity=".22">
-    <rect x="24.8" y="25" width="2.4" height=".7" rx=".35"/><rect x="24.8" y="30" width="2.4" height=".7" rx=".35"/>
-    <rect x="24.8" y="35" width="2.4" height=".7" rx=".35"/><rect x="24.8" y="40" width="2.4" height=".7" rx=".35"/>
-    <rect x="24.8" y="45" width="2.4" height=".7" rx=".35"/>
-    <rect x="30.8" y="17" width="2.4" height=".7" rx=".35"/><rect x="30.8" y="22" width="2.4" height=".7" rx=".35"/>
-    <rect x="30.8" y="27" width="2.4" height=".7" rx=".35"/><rect x="30.8" y="32" width="2.4" height=".7" rx=".35"/>
-    <rect x="30.8" y="37" width="2.4" height=".7" rx=".35"/><rect x="30.8" y="42" width="2.4" height=".7" rx=".35"/>
-    <rect x="30.8" y="47" width="2.4" height=".7" rx=".35"/>
-    <rect x="36.8" y="25" width="2.4" height=".7" rx=".35"/><rect x="36.8" y="30" width="2.4" height=".7" rx=".35"/>
-    <rect x="36.8" y="35" width="2.4" height=".7" rx=".35"/><rect x="36.8" y="40" width="2.4" height=".7" rx=".35"/>
-    <rect x="36.8" y="45" width="2.4" height=".7" rx=".35"/>
+  <!-- 中间三根条内的细密刻痕 -->
+  <g fill="#1f1b16" opacity=".28">
+    <rect x="25.1" y="22.8" width="1.8" height=".6" rx=".3"/>
+    <rect x="25.1" y="27.2" width="1.8" height=".6" rx=".3"/>
+    <rect x="25.1" y="31.6" width="1.8" height=".6" rx=".3"/>
+    <rect x="25.1" y="36.0" width="1.8" height=".6" rx=".3"/>
+    <rect x="25.1" y="40.4" width="1.8" height=".6" rx=".3"/>
+    <rect x="25.1" y="44.8" width="1.8" height=".6" rx=".3"/>
+    <rect x="31.1" y="14.8" width="1.8" height=".6" rx=".3"/>
+    <rect x="31.1" y="19.2" width="1.8" height=".6" rx=".3"/>
+    <rect x="31.1" y="23.6" width="1.8" height=".6" rx=".3"/>
+    <rect x="31.1" y="28.0" width="1.8" height=".6" rx=".3"/>
+    <rect x="31.1" y="32.4" width="1.8" height=".6" rx=".3"/>
+    <rect x="31.1" y="36.8" width="1.8" height=".6" rx=".3"/>
+    <rect x="31.1" y="41.2" width="1.8" height=".6" rx=".3"/>
+    <rect x="31.1" y="45.6" width="1.8" height=".6" rx=".3"/>
+    <rect x="37.1" y="22.8" width="1.8" height=".6" rx=".3"/>
+    <rect x="37.1" y="27.2" width="1.8" height=".6" rx=".3"/>
+    <rect x="37.1" y="31.6" width="1.8" height=".6" rx=".3"/>
+    <rect x="37.1" y="36.0" width="1.8" height=".6" rx=".3"/>
+    <rect x="37.1" y="40.4" width="1.8" height=".6" rx=".3"/>
+    <rect x="37.1" y="44.8" width="1.8" height=".6" rx=".3"/>
   </g>
-  <!-- 共享基线 + 两端小金点 -->
-  <rect x="10" y="52" width="44" height="2.6" rx="1.3" fill="#FFFFFF"/>
-  <circle cx="9.2" cy="53.3" r="1.6" fill="#D4A24C"/>
-  <circle cx="54.8" cy="53.3" r="1.6" fill="#D4A24C"/>
-  <!-- 最高条顶端悬浮金点 -->
-  <circle cx="32" cy="8.5" r="2.6" fill="#D4A24C"/>
-  <circle cx="31.3" cy="7.8" r="1.1" fill="#F0C97A" opacity=".6"/>
+  <!-- 共享基线 + 两端小点 -->
+  <rect x="10" y="51.4" width="44" height="2.4" rx="1.2" fill="#f7f4ee"/>
+  <circle cx="9.2" cy="52.6" r="1.5" fill="#7fa5c4"/>
+  <circle cx="54.8" cy="52.6" r="1.5" fill="#7fa5c4"/>
+  <!-- 最高条顶端悬浮点：满分 -->
+  <circle cx="32" cy="6.6" r="2.6" fill="#7fa5c4"/>
+  <circle cx="31.35" cy="5.95" r="1" fill="#b9d3e6" opacity=".72"/>
 </svg>

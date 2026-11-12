@@ -31,14 +31,12 @@ const F_FEEDBACK = `${SYNC.dataDir}/feedback.json`;
 const pwdPath = uname => `${SYNC.dataDir}/users/${uname}/pwd.json`;
 
 const RELEASE_NOTES = [
-  '新徽标：七根白条组成冠形刻度，顶端一枚金点，缩小到 32 像素仍可辨认',
-  '入场仪式：白条错峰飞入、金点落定、金环扩散，徽标归位到品牌位置后内容逐块渐显',
-  '跳过与记忆：任意点击或按键即可跳过；同一次会话再次打开只播放精简版',
-  '登录页改为棕褐书院色调，奶白登录卡与金色强调，与入场画面无缝衔接',
-  '标签页图标、手机主屏图标与页面徽标统一为同一套矢量图形',
-  '尊重系统「减少动效」设置：关闭飞入，只保留 300 毫秒淡入',
-  '学习类扣分统一为 -2 分，选择科目自动带出「作业未交」备注',
-  '保留上一版的写入安全、并发合并、弱口令与导出校验等修复'
+  '新增深色模式：登录页右上角、侧栏底部可一键切换，首帧即按主题渲染，不闪白',
+  '新增字体切换：宋体（默认）、JetBrains Mono 等宽、原神字体三档，紧挨主题按钮',
+  '数字与日期统一改用 JetBrains Mono，等宽对齐，扣分分值不再抖列',
+  '登录页恢复纸墨配色，与内页同一色系；入场动画与棕褐遮罩保持不变',
+  '徽标重绘：墨色印面 + 奶白刻度 + 靛蓝顶点，标签页与主屏图标同步更新',
+  '未选择主题时跟随系统深浅色，选择后记住本机偏好'
 ];
 
 // 扣分/加分类别字典
@@ -761,6 +759,7 @@ async function doLogin(){
   $('loginView').classList.add('hide');
   $('appView').classList.remove('hide');
   document.body.classList.remove('login-mode');
+  document.body.classList.add('in-app');
   curView = canViewStats() ? 'dashboard' : 'personal';
   renderAll();
   // 首次登录优先设置密码，更新日志放到之后
@@ -784,6 +783,7 @@ function doLogout(){
   $('appView').classList.add('hide');
   $('loginView').classList.remove('hide');
   document.body.classList.add('login-mode');
+  document.body.classList.remove('in-app');
   $('loginPass').value = '';
 }
 function restoreSession(){
@@ -795,6 +795,7 @@ function restoreSession(){
   $('loginView').classList.add('hide');
   $('appView').classList.remove('hide');
   document.body.classList.remove('login-mode');
+  document.body.classList.add('in-app');
   curView = canViewStats() ? 'dashboard' : 'personal';
   renderAll();
   return true;

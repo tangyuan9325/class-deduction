@@ -173,8 +173,8 @@ function renderDashboard(main){
           <div class="card-note">${chart.allZero?'暂无记录':`波动峰值 ${chart.peak} · 今日 ${fmtScore(chart.todayVal)}`}</div>
         </div>
         <div class="chart-key">
-          <span><i style="background:#8d8578"></i>正值</span>
-          <span><i style="background:rgba(163,58,43,.55)"></i>负值</span>
+          <span><i style="background:var(--bar)"></i>正值</span>
+          <span><i style="background:var(--d-bar)"></i>负值</span>
           <span><i style="background:var(--accent)"></i>今天</span>
         </div>
       </div>

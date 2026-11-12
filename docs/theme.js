@@ -1,0 +1,100 @@
+/* ============================================================
+ * 外观：深浅色 + 字体模式
+ *
+ *   本文件在 <head> 同步执行，先给 <html> 打上 data-theme / data-font，
+ *   保证首帧就是正确配色，不会先白一下再变暗。
+ *   控件绑定放在 DOMContentLoaded，页面里可以有多组控件（登录页、侧栏）。
+ * ============================================================ */
+(function(){
+  'use strict';
+  var THEME_KEY = 'cm_theme';
+  var FONT_KEY  = 'cm_font';
+  var FONTS = ['serif', 'mono', 'display'];
+  var root = document.documentElement;
+
+  function read(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function write(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+
+  var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+  var theme = read(THEME_KEY);
+  if(theme !== 'dark' && theme !== 'light') theme = (mq && mq.matches) ? 'dark' : 'light';
+  var font = read(FONT_KEY);
+  if(FONTS.indexOf(font) < 0) font = 'serif';
+
+  root.setAttribute('data-theme', theme);
+  root.setAttribute('data-font', font);
+
+  function paintMeta(){
+    var m = document.querySelector('meta[name="theme-color"]');
+    if(!m) return;
+    // 入场仪式期间固定在棕褐，遮罩消失后再交给主题
+    var booting = root.classList.contains('splash-boot');
+    var dark = root.getAttribute('data-theme') === 'dark';
+    m.setAttribute('content', booting ? '#5C3D28' : (dark ? '#15120e' : '#f7f4ee'));
+  }
+  paintMeta();
+  if(window.MutationObserver){
+    new MutationObserver(paintMeta).observe(root, { attributes:true, attributeFilter:['class', 'data-theme'] });
+  }
+
+  var themingTimer = 0;
+  function flash(){
+    root.classList.add('is-theming');
+    clearTimeout(themingTimer);
+    themingTimer = setTimeout(function(){ root.classList.remove('is-theming'); }, 260);
+  }
+
+  function applyTheme(next, animate){
+    if(animate) flash();
+    root.setAttribute('data-theme', next);
+    write(THEME_KEY, next);
+    paintMeta();
+    sync();
+  }
+
+  function applyFont(next){
+    root.setAttribute('data-font', next);
+    write(FONT_KEY, next);
+    sync();
+  }
+
+  function sync(){
+    var t = root.getAttribute('data-theme');
+    var f = root.getAttribute('data-font');
+    document.querySelectorAll('[data-theme-toggle]').forEach(function(btn){
+      btn.setAttribute('aria-pressed', t === 'dark' ? 'true' : 'false');
+      btn.setAttribute('title', t === 'dark' ? '切换到浅色' : '切换到深色');
+      btn.setAttribute('aria-label', t === 'dark' ? '切换到浅色模式' : '切换到深色模式');
+    });
+    document.querySelectorAll('button[data-font]').forEach(function(btn){
+      var on = btn.getAttribute('data-font') === f;
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
+  function bind(){
+    document.querySelectorAll('[data-theme-toggle]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true);
+      });
+    });
+    document.querySelectorAll('.seg [data-font]').forEach(function(btn){
+      btn.addEventListener('click', function(){ applyFont(btn.getAttribute('data-font')); });
+    });
+    sync();
+    // 没有手动选过时，跟随系统
+    if(mq && mq.addEventListener){
+      mq.addEventListener('change', function(e){
+        if(read(THEME_KEY)) return;
+        applyTheme(e.matches ? 'dark' : 'light', true);
+      });
+    }
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
+  else bind();
+
+  window.CMAppearance = { theme: function(){ return root.getAttribute('data-theme'); }, font: function(){ return root.getAttribute('data-font'); } };
+})();
