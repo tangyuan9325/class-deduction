@@ -404,14 +404,14 @@ function renderRecordCreate(main, isBonus){
     <div class="form-grid">
       ${isBonus?'':`<div class="fld"><label for="rcCat">类别</label><select id="rcCat">${canCats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></div>`}
       <div class="fld"><label for="rcItem">${isBonus?'加分项目':'项目'}</label><select id="rcItem">${dict.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')}</select></div>
-      <div class="fld"><label for="rcScore">分值</label><input id="rcScore" type="number" value="${isBonus?'2':'1'}" min="1" max="50" step="1" inputmode="numeric"></div>
+      <div class="fld"><label for="rcScore">分值</label><input id="rcScore" type="number" value="${isBonus?'2':(canCats[0]==='学习'?'2':'1')}" min="1" max="50" step="1" inputmode="numeric"></div>
       <div class="fld"><label for="rcDate">日期</label><input id="rcDate" type="date" value="${todayStr()}" max="${todayStr()}"></div>
     </div>
     <div class="fld" style="margin-top:14px">
       <label for="rcReason">原因与备注</label>
       <input id="rcReason" placeholder="选择「其它」时必须填写，例如：熄灯后讲话" maxlength="80">
     </div>
-    <div class="hint" style="margin-top:2px">${isBonus?'分值填正数，计入加分统计':'分值填正数，系统按负数累计'} · 每条记录可追溯录入人与时间</div>
+    <div class="hint" style="margin-top:2px">${isBonus?'分值填正数，计入加分统计':'学习类默认 2 分、其余默认 1 分，分值填正数，系统按负数累计'} · 每条记录可追溯录入人与时间</div>
   </div>
   <div class="card" style="padding:0;overflow:hidden">
     <div style="display:flex;align-items:center;gap:10px;padding:16px 20px;flex-wrap:wrap;border-bottom:1px solid var(--line2)">
@@ -466,12 +466,37 @@ function renderRecordCreate(main, isBonus){
   };
   const catSel = main.querySelector('#rcCat');
   const itemSel = main.querySelector('#rcItem');
+  const scoreInput = main.querySelector('#rcScore');
+  const reasonInput = main.querySelector('#rcReason');
+
+  // 学习类默认扣 2 分；选定科目后自动带出「X作业未交」备注
+  const defScore = cat => cat==='学习' ? 2 : 1;
+  let autoReason = '';
+  let reasonTouched = false;
+  let scoreTouched = false;
+  const applyAutoReason = ()=>{
+    const cat = isBonus ? '加分' : (catSel ? catSel.value : '学习');
+    const next = (!isBonus && cat==='学习' && itemSel.value && itemSel.value!=='其它') ? itemSel.value+'作业未交' : '';
+    if(reasonTouched && reasonInput.value.trim() !== autoReason) return; // 用户自己写过，不覆盖
+    reasonInput.value = next;
+    autoReason = next;
+    reasonTouched = false;
+  };
+  reasonInput.oninput = ()=>{
+    const v = reasonInput.value.trim();
+    reasonTouched = v!=='' && v!==autoReason;
+  };
+  scoreInput.oninput = ()=>{ scoreTouched = true; };
+  itemSel.onchange = applyAutoReason;
   if(catSel){
     catSel.onchange = ()=>{
       const items = (DICT.deduct.find(d=>d.name===catSel.value)||{items:[]}).items;
       itemSel.innerHTML = items.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
+      if(!scoreTouched) scoreInput.value = defScore(catSel.value);
+      applyAutoReason();
     };
   }
+  applyAutoReason();
   main.querySelector('#btnRcSubmit').onclick = async ()=>{
     if(!selected.size){ toast('先勾选学生', true); return; }
     const item = itemSel.value;

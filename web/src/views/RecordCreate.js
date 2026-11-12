@@ -52,12 +52,25 @@ async function loadDict() {
   dictItems.value = list || []
 }
 
+// 学习类默认扣 2 分；选定科目后自动带出「X作业未交」备注
+let autoReason = ''
+watch(
+  () => [form.category, form.subject_or_item],
+  ([cat, item]) => {
+    const next = cat === '学习' && item && item !== '其它' ? `${item}作业未交` : ''
+    if (form.reason && form.reason !== autoReason) return // 老师自己写过，不覆盖
+    form.reason = next
+    autoReason = next
+  }
+)
+
 function onSelectionChange(rows) {
   selectedIds.value = rows.map((r) => r.id)
 }
 
 function onCategoryChange() {
   form.subject_or_item = ''
+  form.score = form.category === '学习' ? -2 : -1
 }
 
 async function onSubmit() {
