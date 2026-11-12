@@ -23,7 +23,9 @@
   font-weight:700; font-style:normal; font-display:swap;
 }
 
-/* ---------- 字体：原神（SDK_SC_Web Heavy，子集化） ---------- */
+/* ---------- 字体：原神（SDK_SC_Web Heavy，按页面语料子集化） ----------
+   仅收录站点实际用到的 900 余汉字 + 常用姓名/行为用字，未收录的字由系统字体兜底。
+   约 140KB，只在选择「原神」时下载。重新生成见 tools/build-fonts.py。 */
 @font-face{
   font-family:"Genshin SC";
   src:url("fonts/genshin-sc.woff2") format("woff2");
@@ -110,6 +112,8 @@ html[data-theme="light"] .ic-moon{display:none}
 .ctl .seg button{height:24px; padding:0 8px; border-radius:999px; font-size:12px; color:var(--ink3)}
 .ctl .seg button:hover{color:var(--ink)}
 .ctl .seg button.on{background:var(--raise2); color:var(--ink); box-shadow:none}
+@keyframes ctlPulse{0%,100%{opacity:.95}50%{opacity:.42}}
+.seg button.is-loading{animation:ctlPulse 1.3s ease-in-out infinite}
 html[data-font="display"] .ctl .seg button[data-font="display"],
 html[data-font="mono"] .ctl .seg button[data-font="mono"],
 html[data-font="serif"] .ctl .seg button[data-font="serif"]{background:var(--raise2); color:var(--ink); font-weight:500}

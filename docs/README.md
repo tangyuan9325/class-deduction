@@ -24,7 +24,7 @@
 - **登录页恢复纸墨配色**：回到 `#f7f4ee` 纸底、`#1f1b16` 墨字、`#2b4a63` 靛蓝强调，与内页同一色系；入场动画的棕褐遮罩保留，落幕后是浅色记分册。
 - **深浅色模式**：`html[data-theme]` 切换整套 CSS 变量；登录页右上角、侧栏底部各有一处开关，首帧即按主题渲染（`theme.js` 在 `<head>` 同步执行），不会白闪。未手动选择时跟随系统 `prefers-color-scheme`。
 - **字体切换**：三档——宋体（默认）、JetBrains Mono 等宽、原神字体；数字、日期、分值始终用 JetBrains Mono，等宽对齐。
-- **字体文件**：`docs/fonts/jetbrains-mono-{400,500,700}.woff2`（各约 20KB，仅拉丁与符号）、`docs/fonts/genshin-sc.woff2`（约 325KB，按页面语料 + 常用字子集化，仅在选择原神字体时加载）。重新生成见 `tools/build-fonts.py`。
+- **字体文件**：`docs/fonts/jetbrains-mono-{400,500,700}.woff2`（各约 20KB，仅拉丁与符号）、`docs/fonts/genshin-sc.woff2`（约 140KB，按页面语料 + 常用姓名/行为用字子集化，仅在选择原神字体时下载，下载期间按钮呼吸提示）。重新生成见 `tools/build-fonts.py`。
 - **减少动效**：`prefers-reduced-motion: reduce` 下关闭飞入与位移，只保留 300ms 淡入。
 - **无障碍与稳定性**：装饰层对读屏隐藏，跳过按钮可键盘触发；动画只改 `transform` / `opacity` / `filter`，归位用 `getBoundingClientRect()` 计算，误差小于 1px，不产生布局抖动。
 

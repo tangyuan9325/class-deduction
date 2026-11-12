@@ -34,6 +34,11 @@
     m.setAttribute('content', booting ? '#5C3D28' : (dark ? '#15120e' : '#f7f4ee'));
   }
   paintMeta();
+  if(font === 'display'){
+    if(document.fonts && document.fonts.load){
+      document.fonts.load('400 14px "Genshin SC"', '班级量化考核').catch(function(){});
+    }
+  }
   if(window.MutationObserver){
     new MutationObserver(paintMeta).observe(root, { attributes:true, attributeFilter:['class', 'data-theme'] });
   }
@@ -53,10 +58,24 @@
     sync();
   }
 
+  // 原神字体约 140KB，首次切换时才下载；下载期间按钮呼吸，加载完成自动替换
+  var genLoading = false;
+  function warmGenshin(){
+    if(genLoading || !document.fonts || document.fonts.check('14px "Genshin SC"')) return;
+    genLoading = true;
+    document.querySelectorAll('button[data-font="display"]').forEach(function(b){ b.classList.add('is-loading'); });
+    var done = function(){
+      genLoading = false;
+      document.querySelectorAll('button[data-font="display"]').forEach(function(b){ b.classList.remove('is-loading'); });
+    };
+    document.fonts.load('400 14px "Genshin SC"', '班级量化考核').then(done, done);
+  }
+
   function applyFont(next){
     root.setAttribute('data-font', next);
     write(FONT_KEY, next);
     sync();
+    if(next === 'display') warmGenshin();
   }
 
   function sync(){
