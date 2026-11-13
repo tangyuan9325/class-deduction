@@ -4,18 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#5C3D28">
+<meta name="theme-color" content="#f7f4ee">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com https://raw.githubusercontent.com https://tangyuan9325.github.io; object-src 'none'; base-uri 'none'; form-action 'none';">
-<style>html.splash-boot{background:#5C3D28}html.splash-boot body{background:#5C3D28;overflow:hidden}</style>
+<style>
+html.splash-boot{background:#f7f4ee}
+html.splash-boot[data-theme="dark"]{background:#1b1b19}
+html.splash-boot body{background:transparent;overflow:hidden}
+</style>
 <title>班级量化考核</title>
-<link rel="icon" href="favicon.svg?v=1.4.20261112-r102" type="image/svg+xml">
-<link rel="icon" href="favicon-32.png?v=1.4.20261112-r102" sizes="32x32" type="image/png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1.4.20261112-r102" sizes="180x180">
-<link rel="stylesheet" href="splash.css?v=1.4.20261112-r102">
-<link rel="stylesheet" href="theme.css?v=1.4.20261112-r102">
+<link rel="icon" href="favicon.svg?v=1.4.20261113-r103" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png?v=1.4.20261113-r103" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1.4.20261113-r103" sizes="180x180">
+<link rel="stylesheet" href="splash.css?v=1.4.20261113-r103">
+<link rel="stylesheet" href="theme.css?v=1.4.20261113-r103">
+<link rel="stylesheet" href="brand.css?v=1.4.20261113-r103">
 <link rel="preload" href="fonts/jetbrains-mono-400.woff2" as="font" type="font/woff2" crossorigin>
-<script src="theme.js?v=1.4.20261112-r102"></script>
+<script src="theme.js?v=1.4.20261113-r103"></script>
 <meta name="description" content="班级扣分与加分记录，班主任录入，学生和家长随时查看。">
 <style>
 /* ============================================================
@@ -39,8 +44,8 @@
   --bonus:#3d7050;
   --radius:12px;
   --ease:cubic-bezier(.22,1,.36,1);
-  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
-  --serif:"Songti SC","SimSun","Noto Serif CJK SC","Source Han Serif SC",serif;
+  --sans:"JetBrains Mono","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+  --serif:"JetBrains Mono","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
   --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
   /* 主题扩展变量（夜间在 theme.css 覆盖） */
   --sh:31,27,22;
@@ -414,9 +419,9 @@ td.pos{color:var(--bonus)}
   <div class="splash-stage">
     <div id="splashLogo">
       <svg viewBox="0 0 64 64" aria-hidden="true">
-        <rect x="1.5" y="1.5" width="61" height="61" rx="14" fill="#5C3D28"/>
-        <circle cx="32" cy="32" r="29" fill="none" stroke="#FFFFFF" stroke-opacity=".22" stroke-width="1.2"/>
-        <g fill="#FFFFFF">
+        <rect class="s-tile" x="1.5" y="1.5" width="61" height="61" rx="14"/>
+        <circle class="s-ring" cx="32" cy="32" r="29" fill="none" stroke-width="1.2"/>
+        <g class="s-bar">
           <rect data-bar="1" x="12" y="34" width="4" height="18" rx="2"/>
           <rect data-bar="2" x="18" y="27" width="4" height="25" rx="2"/>
           <rect data-bar="3" x="24" y="20" width="4" height="32" rx="2"/>
@@ -425,7 +430,7 @@ td.pos{color:var(--bonus)}
           <rect data-bar="6" x="42" y="27" width="4" height="25" rx="2"/>
           <rect data-bar="7" x="48" y="34" width="4" height="18" rx="2"/>
         </g>
-        <g fill="#5C3D28" opacity=".22">
+        <g class="s-tick">
           <rect x="24.8" y="25" width="2.4" height=".7" rx=".35"/><rect x="24.8" y="30" width="2.4" height=".7" rx=".35"/>
           <rect x="24.8" y="35" width="2.4" height=".7" rx=".35"/><rect x="24.8" y="40" width="2.4" height=".7" rx=".35"/>
           <rect x="24.8" y="45" width="2.4" height=".7" rx=".35"/>
@@ -437,12 +442,12 @@ td.pos{color:var(--bonus)}
           <rect x="36.8" y="35" width="2.4" height=".7" rx=".35"/><rect x="36.8" y="40" width="2.4" height=".7" rx=".35"/>
           <rect x="36.8" y="45" width="2.4" height=".7" rx=".35"/>
         </g>
-        <rect class="splash-base" x="10" y="52" width="44" height="2.6" rx="1.3" fill="#FFFFFF"/>
-        <circle class="splash-base" cx="9.2" cy="53.3" r="1.6" fill="#D4A24C"/>
-        <circle class="splash-base" cx="54.8" cy="53.3" r="1.6" fill="#D4A24C"/>
+        <rect class="splash-base s-bar" x="10" y="52" width="44" height="2.6" rx="1.3"/>
+        <circle class="splash-base s-dot" cx="9.2" cy="53.3" r="1.6"/>
+        <circle class="splash-base s-dot" cx="54.8" cy="53.3" r="1.6"/>
         <g class="splash-dot">
-          <circle cx="32" cy="8.5" r="2.6" fill="#D4A24C"/>
-          <circle cx="31.3" cy="7.8" r="1.1" fill="#F0C97A" opacity=".6"/>
+          <circle class="s-dot" cx="32" cy="8.5" r="2.6"/>
+          <circle class="s-hi" cx="31.3" cy="7.8" r="1.1" opacity=".6"/>
         </g>
       </svg>
     </div>
@@ -453,6 +458,49 @@ td.pos{color:var(--bonus)}
   <button id="splashSkip" type="button">跳过</button>
 </div>
 
+<!-- ========== 巨型徽标：Liquid Glass 水印，见 brand.js ========== -->
+<div id="brandScene" aria-hidden="true">
+  <div class="scene-aura"></div>
+  <div class="scene-logo" id="sceneLogo">
+    <div class="scene-glass"></div>
+    <svg class="scene-mark" viewBox="0 0 64 64">
+      <defs>
+        <linearGradient id="scGrad" gradientUnits="userSpaceOnUse" x1="6" y1="2" x2="18" y2="58">
+          <stop offset="0"/><stop offset=".42"/><stop offset="1"/>
+        </linearGradient>
+      </defs>
+      <circle class="sc-mark-ring" cx="32" cy="32" r="29"/>
+      <g class="sc-mark-bar">
+        <rect x="12" y="33.4" width="4" height="18" rx="2"/><rect x="18" y="26.4" width="4" height="25" rx="2"/>
+        <rect x="24" y="19.4" width="4" height="32" rx="2"/><rect x="30" y="11.4" width="4" height="40" rx="2"/>
+        <rect x="36" y="19.4" width="4" height="32" rx="2"/><rect x="42" y="26.4" width="4" height="25" rx="2"/>
+        <rect x="48" y="33.4" width="4" height="18" rx="2"/>
+      </g>
+      <g class="sc-mark-tick">
+        <rect x="24.8" y="24.4" width="2.4" height=".7" rx=".35"/><rect x="24.8" y="29.4" width="2.4" height=".7" rx=".35"/>
+        <rect x="24.8" y="34.4" width="2.4" height=".7" rx=".35"/><rect x="24.8" y="39.4" width="2.4" height=".7" rx=".35"/>
+        <rect x="24.8" y="44.4" width="2.4" height=".7" rx=".35"/>
+        <rect x="30.8" y="16.4" width="2.4" height=".7" rx=".35"/><rect x="30.8" y="21.4" width="2.4" height=".7" rx=".35"/>
+        <rect x="30.8" y="26.4" width="2.4" height=".7" rx=".35"/><rect x="30.8" y="31.4" width="2.4" height=".7" rx=".35"/>
+        <rect x="30.8" y="36.4" width="2.4" height=".7" rx=".35"/><rect x="30.8" y="41.4" width="2.4" height=".7" rx=".35"/>
+        <rect x="30.8" y="46.4" width="2.4" height=".7" rx=".35"/>
+        <rect x="36.8" y="24.4" width="2.4" height=".7" rx=".35"/><rect x="36.8" y="29.4" width="2.4" height=".7" rx=".35"/>
+        <rect x="36.8" y="34.4" width="2.4" height=".7" rx=".35"/><rect x="36.8" y="39.4" width="2.4" height=".7" rx=".35"/>
+        <rect x="36.8" y="44.4" width="2.4" height=".7" rx=".35"/>
+      </g>
+      <rect class="sc-mark-bar" x="10" y="51.4" width="44" height="2.4" rx="1.2"/>
+      <circle class="sc-mark-dot" cx="9.2" cy="52.6" r="1.5"/>
+      <circle class="sc-mark-dot" cx="54.8" cy="52.6" r="1.5"/>
+      <circle class="sc-mark-dot" cx="32" cy="6.6" r="2.6"/>
+      <circle class="sc-mark-hi" cx="31.35" cy="5.95" r="1"/>
+    </svg>
+    <div class="scene-rim"></div>
+    <div class="scene-veil"></div>
+    <div class="scene-noise"></div>
+    <div class="scene-sheen"></div>
+  </div>
+</div>
+
 <!-- 登录 -->
 <div class="login-ctl"><div class="ctl" role="group" aria-label="外观">
   <button class="ctl-theme" type="button" data-theme-toggle aria-pressed="false" title="切换深浅色" aria-label="切换深浅色">
@@ -460,8 +508,7 @@ td.pos{color:var(--bonus)}
     <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.4 14.3A8.6 8.6 0 1 1 9.7 3.6a6.9 6.9 0 0 0 10.7 10.7z"/></svg>
   </button>
   <div class="seg" role="group" aria-label="字体">
-    <button type="button" data-font="serif" title="宋体（默认）">宋</button>
-    <button type="button" data-font="mono" title="JetBrains Mono 等宽">等宽</button>
+    <button type="button" data-font="mono" title="JetBrains Mono（默认）">等宽</button>
     <button type="button" data-font="display" title="原神字体">原神</button>
   </div>
 </div></div>
@@ -490,7 +537,7 @@ td.pos{color:var(--bonus)}
       <div class="lead-stat"><div class="k">在册学生</div><div class="v" id="leadStudents">—</div></div>
       <div class="lead-stat"><div class="k">本学期净分</div><div class="v" id="leadNet">—</div></div>
     </div>
-    <div class="lead-foot" id="leadVer">v1.4.20261112</div>
+    <div class="lead-foot" id="leadVer">v1.4.20261113</div>
   </div>
 
   <div class="login-card">
@@ -537,7 +584,7 @@ td.pos{color:var(--bonus)}
       </svg>
       <div>
         <div class="brand-name">班级量化考核</div>
-        <div class="brand-meta" id="brandMeta">v1.4.20261112</div>
+        <div class="brand-meta" id="brandMeta">v1.4.20261113</div>
       </div>
       <button class="side-toggle" id="btnSideToggle" type="button" title="收起侧边栏" aria-label="收起侧边栏" aria-pressed="false">
         <svg class="i" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -556,8 +603,7 @@ td.pos{color:var(--bonus)}
     <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.4 14.3A8.6 8.6 0 1 1 9.7 3.6a6.9 6.9 0 0 0 10.7 10.7z"/></svg>
   </button>
   <div class="seg" role="group" aria-label="字体">
-    <button type="button" data-font="serif" title="宋体（默认）">宋</button>
-    <button type="button" data-font="mono" title="JetBrains Mono 等宽">等宽</button>
+    <button type="button" data-font="mono" title="JetBrains Mono（默认）">等宽</button>
     <button type="button" data-font="display" title="原神字体">原神</button>
   </div>
 </div></div>
@@ -577,7 +623,7 @@ td.pos{color:var(--bonus)}
 <!-- 更新日志 -->
 <div id="changelogMask" class="mask hide">
   <div class="dialog">
-    <h3 id="changelogTitle">更新到 v1.4.20261112</h3>
+    <h3 id="changelogTitle">更新到 v1.4.20261113</h3>
     <div class="dsub">本次更新内容</div>
     <ul class="notes" id="changelogList"></ul>
     <div class="dlg-btns"><button class="btn" id="btnChangelogOk">知道了</button></div>
@@ -642,9 +688,10 @@ td.pos{color:var(--bonus)}
 <div id="refreshChip" class="hide"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="splash.js?v=1.4.20261112-r102"></script>
-<script src="gh-token.js?v=1.4.20261112-r102"></script>
-<script src="app.js?v=1.4.20261112-r102"></script>
-<script src="views.js?v=1.4.20261112-r102"></script>
+<script src="splash.js?v=1.4.20261113-r103"></script>
+<script src="brand.js?v=1.4.20261113-r103"></script>
+<script src="gh-token.js?v=1.4.20261113-r103"></script>
+<script src="app.js?v=1.4.20261113-r103"></script>
+<script src="views.js?v=1.4.20261113-r103"></script>
 </body>
 </html>

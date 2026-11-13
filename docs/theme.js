@@ -9,7 +9,7 @@
   'use strict';
   var THEME_KEY = 'cm_theme';
   var FONT_KEY  = 'cm_font';
-  var FONTS = ['serif', 'mono', 'display'];
+  var FONTS = ['mono', 'display'];
   var root = document.documentElement;
 
   function read(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
@@ -20,7 +20,8 @@
   var theme = read(THEME_KEY);
   if(theme !== 'dark' && theme !== 'light') theme = (mq && mq.matches) ? 'dark' : 'light';
   var font = read(FONT_KEY);
-  if(FONTS.indexOf(font) < 0) font = 'serif';
+  if(font === 'serif') font = 'mono';          // 旧版本存过宋体，迁到等宽
+  if(FONTS.indexOf(font) < 0) font = 'mono';   // 默认 JetBrains Mono
 
   root.setAttribute('data-theme', theme);
   root.setAttribute('data-font', font);
@@ -31,7 +32,7 @@
     // 入场仪式期间固定在棕褐，遮罩消失后再交给主题
     var booting = root.classList.contains('splash-boot');
     var dark = root.getAttribute('data-theme') === 'dark';
-    m.setAttribute('content', booting ? '#5C3D28' : (dark ? '#15120e' : '#f7f4ee'));
+    m.setAttribute('content', booting ? (dark ? '#1b1b19' : '#f7f4ee') : (dark ? '#15120e' : '#f7f4ee'));
   }
   paintMeta();
   if(font === 'display'){

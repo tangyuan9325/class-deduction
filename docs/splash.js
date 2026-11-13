@@ -44,6 +44,8 @@
     ['pointerdown','wheel','keydown','touchstart'].forEach(ev=>{
       document.removeEventListener(ev, skip, true);
     });
+    // 交给巨型徽标场景：开屏结束后淡入右下角水印
+    try{ window.dispatchEvent(new CustomEvent('cm:splash-done')); }catch(e){}
   }
 
   function skip(){

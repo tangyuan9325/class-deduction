@@ -22,7 +22,7 @@ const SYNC = {
   rawBase: 'https://raw.githubusercontent.com',
   maxWritesPerHour: 40
 };
-const APP_VERSION = '1.4.20261112';
+const APP_VERSION = '1.4.20261113';
 const DB_VERSION = 5;
 const PBKDF2_ITER = 600000;
 const F_ACCOUNTS = `${SYNC.dataDir}/accounts.json`;
@@ -31,12 +31,11 @@ const F_FEEDBACK = `${SYNC.dataDir}/feedback.json`;
 const pwdPath = uname => `${SYNC.dataDir}/users/${uname}/pwd.json`;
 
 const RELEASE_NOTES = [
-  '新增深色模式：登录页右上角、侧栏底部可一键切换，首帧即按主题渲染，不闪白',
-  '新增字体切换：宋体（默认）、JetBrains Mono 等宽、原神字体三档，紧挨主题按钮',
-  '数字与日期统一改用 JetBrains Mono，等宽对齐，扣分分值不再抖列',
-  '登录页恢复纸墨配色，与内页同一色系；入场动画与棕褐遮罩保持不变',
-  '徽标重绘：墨色印面 + 奶白刻度 + 靛蓝顶点，标签页与主屏图标同步更新',
-  '未选择主题时跟随系统深浅色，选择后记住本机偏好'
+  '开屏动画改为随主题换色：浅色米白、深色深灰，徽标与光晕同步换色',
+  '开屏结束后，右下角出现占屏幕四分之三的巨型玻璃徽标，鼠标移入有跟随高光',
+  '登录时徽标由半透明升为顶层不透明，再沿弧线归位到左上角',
+  '字体只保留 JetBrains Mono 与原神两档，宋体彻底移除，默认等宽',
+  '深浅色切换与字体切换合并为同一组控件，侧栏折叠时仍可切换主题'
 ];
 
 // 扣分/加分类别字典
@@ -762,9 +761,13 @@ async function doLogin(){
   document.body.classList.add('in-app');
   curView = canViewStats() ? 'dashboard' : 'personal';
   renderAll();
-  // 首次登录优先设置密码，更新日志放到之后
-  if(u.must_change && u.role!=='admin') openChangePass(true);
-  else if(!seenCurrentRelease(u.username)) showChangelog();
+  // 首次登录优先设置密码，更新日志放到之后；等徽标归位再弹，避免挡住动画
+  const afterLogin = ()=>{
+    if(u.must_change && u.role!=='admin') openChangePass(true);
+    else if(!seenCurrentRelease(u.username)) showChangelog();
+  };
+  if(window.CMBrand) window.CMBrand.flyToSlot().then(afterLogin, afterLogin);
+  else afterLogin();
   if(ghToken) toast('已登录，写入已解锁');
 }
 function logout(silent){
@@ -785,6 +788,7 @@ function doLogout(){
   document.body.classList.add('login-mode');
   document.body.classList.remove('in-app');
   $('loginPass').value = '';
+  if(window.CMBrand) window.CMBrand.reset();
 }
 function restoreSession(){
   const sv = readSession();
@@ -798,6 +802,7 @@ function restoreSession(){
   document.body.classList.add('in-app');
   curView = canViewStats() ? 'dashboard' : 'personal';
   renderAll();
+  if(window.CMBrand) window.CMBrand.hide();
   return true;
 }
 

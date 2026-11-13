@@ -1,27 +1,61 @@
 /* ============================================================
    入场仪式 · Splash
-   棕褐 #5C3D28 → #7A5236 · 奶白 #FDF8F2 · 金 #D4A24C / 高光 #F0C97A
+   浅色：米白画布 + 墨色徽标；深色：深灰画布 + 奶白徽标
    仅使用 transform / opacity / filter，保证合成层动画
    ============================================================ */
+
+:root{
+  --sp-bg:radial-gradient(120% 100% at 50% 34%, #fdfbf7 0%, #f7f4ee 56%, #ece5da 100%);
+  --sp-solid:#f7f4ee;
+  --sp-fg:#1f1b16;
+  --sp-word:rgba(31,27,22,.60);
+  --sp-sub:rgba(43,74,99,.52);
+  --sp-skip:rgba(31,27,22,.55);
+  --sp-skip-line:rgba(31,27,22,.18);
+  --sp-glow:rgba(43,74,99,.14);
+  --sp-halo:rgba(43,74,99,.42);
+  --sp-tile:#1f1b16;
+  --sp-bar:#fbf7f0;
+  --sp-ring:rgba(251,247,240,.20);
+  --sp-tick:#1f1b16;
+  --sp-dot:#7fa5c4;
+  --sp-hi:#d8e8f4;
+}
+html[data-theme="dark"]{
+  --sp-bg:radial-gradient(120% 100% at 50% 34%, #33332f 0%, #232320 56%, #161614 100%);
+  --sp-solid:#1b1b19;
+  --sp-fg:#f0e9dd;
+  --sp-word:rgba(240,233,221,.78);
+  --sp-sub:rgba(147,187,217,.58);
+  --sp-skip:rgba(240,233,221,.58);
+  --sp-skip-line:rgba(240,233,221,.20);
+  --sp-glow:rgba(147,187,217,.16);
+  --sp-halo:rgba(147,187,217,.5);
+  --sp-tile:#34302a;
+  --sp-bar:#f0e9dd;
+  --sp-ring:rgba(240,233,221,.18);
+  --sp-tick:#26241f;
+  --sp-dot:#93bbd9;
+  --sp-hi:#e2eef7;
+}
 
 #splash{
   position:fixed; inset:0; z-index:300;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  background:
-    radial-gradient(120% 100% at 50% 36%, #7A5236 0%, #5C3D28 58%, #4A3020 100%);
-  color:#FDF8F2; overflow:hidden;
+  background:var(--sp-bg);
+  color:var(--sp-fg); overflow:hidden;
   will-change:opacity;
 }
 #splash.is-gone{display:none}
 
-/* Phase 0：中心金色光晕 */
+/* Phase 0：中心光晕 */
 .splash-glow{
   position:absolute; left:50%; top:42%; width:560px; height:560px; margin:-280px 0 0 -280px;
   border-radius:50%; opacity:0; pointer-events:none;
   background:radial-gradient(circle,
-    rgba(212,162,76,.46) 0%,
-    rgba(212,162,76,.16) 38%,
-    rgba(212,162,76,.05) 58%,
+    var(--sp-glow) 0%,
+    rgba(43,74,99,.06) 38%,
+    rgba(43,74,99,.02) 58%,
     transparent 72%);
   filter:blur(4px);
 }
@@ -34,32 +68,40 @@
 #splashLogo [data-bar]{transform-box:fill-box; transform-origin:50% 100%}
 #splashLogo .splash-dot{transform-box:fill-box; transform-origin:50% 50%}
 
-/* Phase 2：金色细环光波 */
+/* 徽标配色跟随主题 */
+#splashLogo .s-tile{fill:var(--sp-tile)}
+#splashLogo .s-bar{fill:var(--sp-bar)}
+#splashLogo .s-ring{stroke:var(--sp-ring)}
+#splashLogo .s-tick{fill:var(--sp-tick); opacity:.22}
+#splashLogo .s-dot{fill:var(--sp-dot)}
+#splashLogo .s-hi{fill:var(--sp-hi)}
+
+/* Phase 2：细环光波 */
 .splash-halo{
   position:absolute; left:50%; top:50%; width:112px; height:112px; margin:-56px 0 0 -56px;
-  border-radius:50%; border:1px solid rgba(212,162,76,.85); opacity:0; pointer-events:none;
-  box-shadow:0 0 18px rgba(212,162,76,.22);
+  border-radius:50%; border:1px solid var(--sp-halo); opacity:0; pointer-events:none;
+  box-shadow:0 0 18px rgba(43,74,99,.12);
 }
 
 .splash-word{
   position:relative; margin-top:26px; opacity:0;
   font-family:var(--serif); font-size:15px; letter-spacing:.34em; text-indent:.34em;
-  color:rgba(253,248,242,.86);
+  color:var(--sp-word);
 }
 .splash-sub{
   position:relative; margin-top:9px; opacity:0;
   font-family:var(--mono); font-size:9px; letter-spacing:.3em; text-indent:.3em;
-  color:rgba(240,201,122,.62);
+  color:var(--sp-sub);
 }
 
 #splashSkip{
   position:absolute; right:22px; bottom:20px;
   font-size:12px; line-height:1; padding:7px 13px; border-radius:999px;
-  color:rgba(253,248,242,.62); border:1px solid rgba(253,248,242,.24);
+  color:var(--sp-skip); border:1px solid var(--sp-skip-line);
   background:transparent; cursor:pointer;
   transition:color .15s ease, border-color .15s ease, background-color .15s ease;
 }
-#splashSkip:hover{color:#FDF8F2; border-color:rgba(253,248,242,.5); background:rgba(253,248,242,.06)}
+#splashSkip:hover{color:var(--sp-fg); border-color:var(--sp-skip); background:rgba(127,127,127,.08)}
 
 /* Phase 4：主内容呼吸式渐显（JS 打点，逐块 80ms 错峰） */
 .rv{
@@ -70,7 +112,7 @@
 }
 @keyframes rvIn{ to{ opacity:1; transform:none; filter:blur(0) } }
 
-body.splash-on{ background:#5C3D28; overflow:hidden }
+body.splash-on{ background:var(--sp-solid); overflow:hidden }
 
 @media (max-width:640px){
   #splashLogo{width:72px; height:72px}

@@ -32,14 +32,17 @@
   font-weight:100 900; font-style:normal; font-display:swap;
 }
 
-/* ---------- 字体模式 ---------- */
+/* ---------- 字体模式：只有两档，宋体已移除 ----------
+   等宽：JetBrains Mono 打头，汉字回退系统无衬线（JetBrains 不含汉字）
+   原神：整站（含汉字）走原神字体包，缺字回退系统无衬线
+   两种模式都不再出现宋体。 */
 html[data-font="mono"]{
   --sans:"JetBrains Mono","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
-  --serif:"JetBrains Mono","Songti SC","SimSun","Noto Serif CJK SC",serif;
+  --serif:"JetBrains Mono","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
 }
 html[data-font="display"]{
-  --sans:"Genshin SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
-  --serif:"Genshin SC","Songti SC","SimSun","Noto Serif CJK SC",serif;
+  --sans:"Genshin SC","JetBrains Mono","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+  --serif:"Genshin SC","JetBrains Mono","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
 }
 
 /* ---------- 夜间：墨底纸字 ---------- */
@@ -115,8 +118,7 @@ html[data-theme="light"] .ic-moon{display:none}
 @keyframes ctlPulse{0%,100%{opacity:.95}50%{opacity:.42}}
 .seg button.is-loading{animation:ctlPulse 1.3s ease-in-out infinite}
 html[data-font="display"] .ctl .seg button[data-font="display"],
-html[data-font="mono"] .ctl .seg button[data-font="mono"],
-html[data-font="serif"] .ctl .seg button[data-font="serif"]{background:var(--raise2); color:var(--ink); font-weight:500}
+html[data-font="mono"] .ctl .seg button[data-font="mono"]{background:var(--raise2); color:var(--ink); font-weight:500}
 
 /* 登录页：右上角悬浮；进入应用后交给侧栏里的那一组 */
 .login-ctl{position:fixed; right:22px; top:20px; z-index:60}
