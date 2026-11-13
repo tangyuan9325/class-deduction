@@ -158,6 +158,17 @@ html[data-theme="dark"] .scene-rim{opacity:.5}
     transparent 62%);
   mix-blend-mode:screen; opacity:0;
 }
+/* 浅色底上用 screen 提不亮近白面，改用正常混合 + 一圈极淡的折射暗环 */
+html[data-theme="light"] .scene-sheen{
+  mix-blend-mode:normal;
+  background:radial-gradient(circle at 50% 50%,
+    rgba(255,255,255,.92) 0%,
+    rgba(255,255,255,.62) 16%,
+    rgba(255,255,255,.22) 32%,
+    rgba(31,27,22,.055) 46%,
+    rgba(31,27,22,.02) 54%,
+    transparent 64%);
+}
 .scene-sheen::after{
   content:''; position:absolute; inset:34%; border-radius:50%;
   background:radial-gradient(circle, rgba(255,255,255,.9) 0%, rgba(255,255,255,.35) 42%, transparent 70%);
